@@ -51,6 +51,7 @@ import org.matrix.androidsdk.rest.callback.ApiCallback;
 import org.matrix.androidsdk.rest.callback.SimpleApiCallback;
 import org.matrix.androidsdk.rest.model.ContentResponse;
 import org.matrix.androidsdk.util.ContentManager;
+import org.matrix.androidsdk.util.ImageUtils;
 import org.matrix.console.Matrix;
 import org.matrix.console.MyPresenceManager;
 import org.matrix.console.R;
@@ -59,6 +60,7 @@ import org.matrix.console.gcm.GcmRegistrationManager;
 import org.matrix.console.util.ResourceUtils;
 import org.matrix.console.util.UIUtils;
 
+import java.io.InputStream;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -495,39 +497,54 @@ public class SettingsActivity extends MXCActionBarActivity {
                 this.runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        mTmpThumbnailUriBySession.put(mUpdatingSession, data.getData());
-
                         final LinearLayout linearLayout = mLinearLayoutBySession.get(mUpdatingSession);
                         ImageView avatarView = (ImageView) linearLayout.findViewById(R.id.imageView_avatar);
 
                         Uri imageUri = data.getData();
-
-                        // try to get the gallery thumbnail to save memory
                         Bitmap thumbnailBitmap = null;
+                        Uri scaledImageUri = data.getData();
 
                         try {
-                            ContentResolver resolver = getContentResolver();
+                            ResourceUtils.Resource resource = ResourceUtils.openResource(SettingsActivity.this, imageUri);
 
-                            List uriPath = imageUri.getPathSegments();
-                            long imageId = -1;
-                            String lastSegment = (String) uriPath.get(uriPath.size() - 1);
+                            // with jpg files
+                            // check exif parameter and reduce image size
+                            if ("image/jpg".equals(resource.mimeType) || "image/jpeg".equals(resource.mimeType)) {
+                                InputStream stream = resource.contentStream;
+                                int rotationAngle = ImageUtils
+                                        .getRotationAngleForBitmap(SettingsActivity.this, imageUri);
 
-                            // > Kitkat
-                            if (lastSegment.startsWith("image:")) {
-                                lastSegment = lastSegment.substring("image:".length());
+                                String mediaUrl = ImageUtils.scaleAndRotateImage(SettingsActivity.this, stream, resource.mimeType, 1024, rotationAngle, SettingsActivity.this.mMediasCache);
+                                scaledImageUri = Uri.parse(mediaUrl);
+                            } else {
+                                ContentResolver resolver = getContentResolver();
+
+                                List uriPath = imageUri.getPathSegments();
+                                long imageId = -1;
+                                String lastSegment = (String) uriPath.get(uriPath.size() - 1);
+
+                                // > Kitkat
+                                if (lastSegment.startsWith("image:")) {
+                                    lastSegment = lastSegment.substring("image:".length());
+                                }
+
+                                imageId = Long.parseLong(lastSegment);
+                                thumbnailBitmap = MediaStore.Images.Thumbnails.getThumbnail(resolver, imageId, MediaStore.Images.Thumbnails.MINI_KIND, null);
                             }
 
-                            imageId = Long.parseLong(lastSegment);
-                            thumbnailBitmap = MediaStore.Images.Thumbnails.getThumbnail(resolver, imageId, MediaStore.Images.Thumbnails.MINI_KIND, null);
+                            resource.contentStream.close();
+
                         } catch (Exception e) {
                             Log.e(LOG_TAG, "MediaStore.Images.Thumbnails.getThumbnail " + e.getMessage());
                         }
 
                         if (null != thumbnailBitmap) {
                             avatarView.setImageBitmap(thumbnailBitmap);
-                        } else {
-                            avatarView.setImageURI(imageUri);
+                        } else{
+                            avatarView.setImageURI(scaledImageUri);
                         }
+
+                        mTmpThumbnailUriBySession.put(mUpdatingSession, scaledImageUri);
 
                         final Button saveButton = (Button) linearLayout.findViewById(R.id.button_save);
                         saveButton.setEnabled(true); // Enable the save button if it wasn't already
