@@ -126,6 +126,10 @@ public class ImageWebViewActivity extends FragmentActivity {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        if (CommonActivityUtils.shouldRestartApp()) {
+            CommonActivityUtils.restartApp(this);
+        }
+        
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_image_web_view);
 

@@ -140,6 +140,10 @@ public class NotificationSettingsActivity extends MXCActionBarActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        if (CommonActivityUtils.shouldRestartApp()) {
+            CommonActivityUtils.restartApp(this);
+        }
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_notification_settings);
 

@@ -18,8 +18,10 @@ package org.matrix.console.activity;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.AlarmManager;
 import android.app.AlertDialog;
 import android.app.DownloadManager;
+import android.app.PendingIntent;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -30,6 +32,7 @@ import android.os.Environment;
 import android.preference.PreferenceManager;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
+import android.text.BoringLayout;
 import android.text.TextUtils;
 import android.util.Log;
 import android.widget.ArrayAdapter;
@@ -88,6 +91,24 @@ public class CommonActivityUtils {
 
         // clear credentials
         Matrix.getInstance(activity).clearSession(activity, session, clearCredentials);
+    }
+
+    public static Boolean shouldRestartApp() {
+        EventStreamService eventStreamService = EventStreamService.getInstance();
+        return !Matrix.hasValidSessions() || (null == eventStreamService);
+    }
+
+    /**
+     * Restart the application after 100ms
+     * @param activity activity
+     */
+    public static void restartApp(Context activity) {
+        PendingIntent mPendingIntent = PendingIntent.getActivity(activity, 314159, new Intent(activity, LoginActivity.class), PendingIntent.FLAG_CANCEL_CURRENT);
+
+        // so restart the application after 100ms
+        AlarmManager mgr = (AlarmManager) activity.getSystemService(activity.ALARM_SERVICE);
+        mgr.set(AlarmManager.RTC, System.currentTimeMillis() + 50, mPendingIntent);
+        System.exit(0);
     }
 
     /**

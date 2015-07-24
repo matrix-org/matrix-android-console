@@ -23,6 +23,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.view.ViewPager;
+import android.util.Log;
 import android.view.View;
 
 import org.matrix.console.R;
@@ -78,6 +79,11 @@ public class ImageSliderActivity extends FragmentActivity {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+
+        if (CommonActivityUtils.shouldRestartApp()) {
+            CommonActivityUtils.restartApp(this);
+        }
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_images_slider);
 

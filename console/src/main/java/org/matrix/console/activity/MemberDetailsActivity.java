@@ -125,6 +125,10 @@ public class MemberDetailsActivity extends MXCActionBarActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        if (CommonActivityUtils.shouldRestartApp()) {
+            CommonActivityUtils.restartApp(this);
+        }
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_member_details);
 
