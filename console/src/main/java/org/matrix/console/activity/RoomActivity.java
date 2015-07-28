@@ -238,7 +238,11 @@ public class RoomActivity extends MXCActionBarActivity {
 
     public void appendTextToEditor(String text) {
         if (null != text) {
-            mEditText.append(text);
+            if (TextUtils.isEmpty(mEditText.getText())) {
+                mEditText.append(text + ": ");
+            } else {
+                mEditText.append(text);
+            }
         }
     }
 
