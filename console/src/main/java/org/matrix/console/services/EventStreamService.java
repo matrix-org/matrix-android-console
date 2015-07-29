@@ -458,6 +458,8 @@ public class EventStreamService extends Service {
         }
 
         updateListenerNotification();
+
+        mState = StreamAction.START;
     }
 
     private void stop() {
