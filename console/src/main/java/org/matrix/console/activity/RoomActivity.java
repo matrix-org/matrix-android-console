@@ -49,6 +49,7 @@ import android.widget.ImageView;
 import android.widget.Toast;
 
 import org.matrix.androidsdk.MXSession;
+import org.matrix.androidsdk.call.IMXCall;
 import org.matrix.androidsdk.data.MyUser;
 import org.matrix.androidsdk.data.Room;
 import org.matrix.androidsdk.data.RoomState;
@@ -841,6 +842,13 @@ public class RoomActivity extends MXCActionBarActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.room, menu);
+
+        // the calls are only allowed in 1:1 room
+        if (!mSession.isVoipCallSupported() || (mRoom.getMembers().size() != 2)) {
+            menu.removeItem(R.id.ic_action_voice_call);
+            menu.removeItem(R.id.ic_action_video_call);
+        }
+
         return true;
     }
 
@@ -848,7 +856,29 @@ public class RoomActivity extends MXCActionBarActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
 
-        if (id == R.id.ic_action_invite_by_list) {
+        if ((id == R.id.ic_action_voice_call) || (id == R.id.ic_action_video_call)) {
+            if (mSession.isVoipCallSupported() && (mRoom.getMembers().size() == 2)) {
+                // create the call object
+                IMXCall call = mSession.mCallsManager.createCallInRoom(mRoom.getRoomId());
+
+                if (null != call) {
+                    final Intent intent = new Intent(RoomActivity.this, CallViewActivity.class);
+
+                    intent.putExtra(CallViewActivity.EXTRA_MATRIX_ID, mSession.getCredentials().userId);
+                    intent.putExtra(CallViewActivity.EXTRA_ROOM_ID, mRoom.getRoomId());
+                    intent.putExtra(CallViewActivity.EXTRA_CALL_TYPE, (id == R.id.ic_action_voice_call) ? CallViewActivity.AUDIO_CALL : CallViewActivity.VIDEO_CALL);
+                    intent.putExtra(CallViewActivity.EXTRA_DIRECTION, CallViewActivity.OUTBOUND_CALL);
+                    intent.putExtra(CallViewActivity.EXTRA_CALL_ID, call.callId());
+
+                    RoomActivity.this.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            RoomActivity.this.startActivity(intent);
+                        }
+                    });
+                }
+            }
+        } else if (id == R.id.ic_action_invite_by_list) {
             FragmentManager fm = getSupportFragmentManager();
 
             MembersInvitationDialogFragment fragment = (MembersInvitationDialogFragment) fm.findFragmentByTag(TAG_FRAGMENT_INVITATION_MEMBERS_DIALOG);

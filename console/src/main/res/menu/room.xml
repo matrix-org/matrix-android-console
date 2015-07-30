@@ -3,6 +3,14 @@
     xmlns:tools="http://schemas.android.com/tools"
     tools:context="org.matrix.console.activity.RoomActivity" >
 
+    <item android:id="@+id/ic_action_voice_call"
+        android:title="@string/action_voice_call"
+        app:showAsAction="never" />
+
+    <item android:id="@+id/ic_action_video_call"
+        android:title="@string/action_video_call"
+        app:showAsAction="never" />
+
     <item android:id="@+id/ic_action_room_info"
         android:title="@string/action_room_info"
         android:icon="@drawable/ic_material_description"
@@ -17,7 +25,6 @@
         android:title="@string/action_invite_by_name"
         android:icon="@drawable/ic_material_person_add_small"
         app:showAsAction="never" />
-
 
     <item android:id="@+id/ic_action_invite_by_list"
         android:title="@string/action_invite_by_list"

@@ -20,9 +20,11 @@ import android.annotation.TargetApi;
 import android.app.ActivityManager;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
+import android.text.TextUtils;
 import android.util.Log;
 
 import android.view.View;
@@ -35,6 +37,9 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import com.google.gson.JsonElement;
@@ -43,14 +48,18 @@ import com.google.gson.JsonParser;
 import com.squareup.okhttp.Call;
 
 import org.matrix.androidsdk.MXSession;
+import org.matrix.androidsdk.call.IMXCall;
+import org.matrix.androidsdk.call.MXChromeCall;
 import org.matrix.androidsdk.data.Room;
 import org.matrix.androidsdk.rest.callback.ApiCallback;
 import org.matrix.androidsdk.rest.model.Event;
 import org.matrix.androidsdk.rest.model.MatrixError;
+import org.matrix.androidsdk.rest.model.RoomMember;
 import org.matrix.console.Matrix;
 import org.matrix.console.R;
 
 import java.util.ArrayList;
+import java.util.Collection;
 
 public class CallViewActivity extends FragmentActivity {
     private static final String LOG_TAG = "CallViewActivity";
@@ -58,43 +67,93 @@ public class CallViewActivity extends FragmentActivity {
     public static final String VIDEO_CALL = "CallViewActivity.VIDEO_CALL";
     public static final String AUDIO_CALL = "CallViewActivity.AUDIO_CALL";
 
+    public static final String INBOUND_CALL = "CallViewActivity.INBOUND_CALL";
+    public static final String OUTBOUND_CALL = "CallViewActivity.OUTBOUND_CALL";
+
     public static final String EXTRA_MATRIX_ID = "org.matrix.console.activity.CallViewActivity.EXTRA_MATRIX_ID";
     public static final String EXTRA_ROOM_ID = "org.matrix.console.activity.CallViewActivity.EXTRA_ROOM_ID";
-    public static final String EXTRA_CALLEE_ID = "org.matrix.console.activity.CallViewActivity.EXTRA_CALLEE_ID";
     public static final String EXTRA_CALL_TYPE = "org.matrix.console.activity.CallViewActivity.EXTRA_CALL_TYPE";
-    public static final String EXTRA_INIT_MSG = "org.matrix.console.activity.CallViewActivity.EXTRA_INIT_MSG";
+    public static final String EXTRA_DIRECTION = "org.matrix.console.activity.CallViewActivity.EXTRA_DIRECTION";
     public static final String EXTRA_CALL_ID = "org.matrix.console.activity.CallViewActivity.EXTRA_CALL_ID";
 
-    private static WebView mSavedWebview = null;
-    private CallWebAppInterface mSavedWebAppInterface = null;
+    private static View mSavedCallview = null;
 
-    private WebView mWebView;
+    private View mCallView;
 
     // account info
     private String mRoomId = null;
     private String mMatrixId = null;
+    private String mCallId = null;
     private MXSession mSession = null;
     private Room mRoom = null;
 
-    private String mCalleeUserID = null;
+    // call info
     private String mCallType = null;
-    private String mInitMsg = null;
-    private String mCallId = null;
+    private String mDirection = null;
+    private IMXCall mCall = null;
+    private RoomMember mOtherMember = null;
 
-    private CallWebAppInterface mCallWebAppInterface;
+    // graphical items
+    private View mAcceptRejectLayout;
+    private Button mCancelButton;
+    private Button mAcceptButton;
+    private Button mRejectButton;
+    private Button mStopButton;
 
-    private static CallViewActivity instance = null;
+    private IMXCall.MXCallListener mListener = new IMXCall.MXCallListener() {
+        @Override
+        public void onStateDidChange(String state) {
+            manageSubViews();
+        }
 
-    private static ArrayList<JsonElement> mPendingCandidates = new ArrayList<JsonElement>();
+        @Override
+        public void onCallError(String error) {
+            // display error message here
+        }
+
+        @Override
+        public void onViewLoading(View callview) {
+            mCallView = callview;
+            mCallView.setBackgroundColor(Color.TRANSPARENT);
+            insertCallView(mOtherMember.avatarUrl);
+        }
+
+        @Override
+        public void onViewReady() {
+            if (mDirection.equals(OUTBOUND_CALL)) {
+                mCall.placeCall(CallViewActivity.VIDEO_CALL.equals(mCallType));
+            }
+        }
+
+        @Override
+        public void onCallEnd() {
+            CallViewActivity.this.finish();
+        }
+    };
+
+
+    /**
+     * Insert the callView in the activity (above the other room member)
+     * @param avatarUrl the other member avatar
+     */
+    private void insertCallView(String avatarUrl) {
+        ImageView avatarView = (ImageView)CallViewActivity.this.findViewById(R.id.call_other_member);
+        avatarView.setImageResource(R.drawable.ic_contact_picture_holo_light);
+
+        if (!TextUtils.isEmpty(avatarUrl)) {
+            int size = CallViewActivity.this.getResources().getDimensionPixelSize(R.dimen.member_list_avatar_size);
+            mSession.getMediasCache().loadAvatarThumbnail(avatarView, avatarUrl, size);
+        }
+
+        RelativeLayout layout = (RelativeLayout)CallViewActivity.this.findViewById(R.id.call_layout);
+        RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT);
+        params.addRule(RelativeLayout.ALIGN_PARENT_LEFT, RelativeLayout.TRUE);
+        params.addRule(RelativeLayout.ALIGN_PARENT_TOP, RelativeLayout.TRUE);
+        layout.addView(mCallView, 1, params);
+    }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
-        if (null != instance) {
-            Log.e(LOG_TAG, "Cannot launch two call instances");
-            finish();
-            return;
-        }
-
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_callview);
 
@@ -117,8 +176,10 @@ public class CallViewActivity extends FragmentActivity {
             return;
         }
 
+        mCallId = intent.getStringExtra(EXTRA_CALL_ID);
         mRoomId = intent.getStringExtra(EXTRA_ROOM_ID);
         mMatrixId = intent.getStringExtra(EXTRA_MATRIX_ID);
+        mDirection = intent.getStringExtra(EXTRA_DIRECTION);
 
         mSession = Matrix.getInstance(getApplicationContext()).getSession(mMatrixId);
         if (null == mSession) {
@@ -134,154 +195,116 @@ public class CallViewActivity extends FragmentActivity {
             return;
         }
 
-        if (intent.hasExtra(EXTRA_CALLEE_ID)) {
-            mCalleeUserID = intent.getStringExtra(EXTRA_CALLEE_ID);
+        mCall = mSession.mCallsManager.callWithCallId(mCallId);
+
+        if (null == mCall) {
+            Log.e(LOG_TAG, "invalid callId");
+            finish();
+            return;
         }
 
         if (intent.hasExtra(EXTRA_CALL_TYPE)) {
             mCallType = intent.getStringExtra(EXTRA_CALL_TYPE);
         }
 
-        if (intent.hasExtra(EXTRA_INIT_MSG)) {
-            mInitMsg = intent.getStringExtra(EXTRA_INIT_MSG);
+        Collection<RoomMember> members = mRoom.getMembers();
+
+        // must only be called in 1:1 room
+        if ((null == members) || (members.size() != 2)) {
+            Log.e(LOG_TAG, "invalid members count");
+            finish();
+            return;
         }
 
-        if (intent.hasExtra(EXTRA_CALL_ID)) {
-            mCallId = intent.getStringExtra(EXTRA_CALL_ID);
+        for(RoomMember m : members) {
+            if (!mSession.getCredentials().userId.equals(m.getUserId())) {
+                mOtherMember = m;
+            }
         }
 
-        mWebView = (WebView)findViewById(R.id.webview);
+        // invalid member
+        if (null == mOtherMember) {
+            Log.e(LOG_TAG, "invalid member");
+            finish();
+            return;
+        }
 
-        if (null != mSavedWebview) {
-            ViewGroup parent = (ViewGroup) mWebView.getParent();
-            int index = parent.indexOfChild(mWebView);
-            parent.removeView(mWebView);
-            parent.addView(mSavedWebview, index);
+        // init the call button
+        manageSubViews();
 
-            mWebView = mSavedWebview;
-            mSavedWebview = null;
-            mCallWebAppInterface = mSavedWebAppInterface;
-            mSavedWebAppInterface = null;
+        if (null != mSavedCallview) {
+            mCallView = mSavedCallview;
+            insertCallView(mOtherMember.avatarUrl);
         } else {
+            mCall.createCallView();
+        }
 
-            mCallWebAppInterface = new CallWebAppInterface(this, mSession.getCredentials().accessToken, mRoom.getRoomId(), mCalleeUserID, mCallType, mInitMsg, mCallId);
-            mWebView.addJavascriptInterface(mCallWebAppInterface, "Android");
+        mCall.addListener(mListener);
+    }
 
-            mWebView.setWebContentsDebuggingEnabled(true);
-            WebSettings settings = mWebView.getSettings();
+    /**
+     * Init the buttons layer
+     */
+    private void manageSubViews() {
 
-            // Enable Javascript
-            settings.setJavaScriptEnabled(true);
+        // initialize buttons
+        if (null == mAcceptRejectLayout) {
+            mAcceptRejectLayout = findViewById(R.id.layout_accept_reject);
+            mAcceptButton = (Button) findViewById(R.id.accept_button);
+            mRejectButton = (Button) findViewById(R.id.reject_button);
+            mCancelButton = (Button) findViewById(R.id.cancel_button);
+            mStopButton = (Button) findViewById(R.id.stop_button);
 
-            // Use WideViewport and Zoom out if there is no viewport defined
-            settings.setUseWideViewPort(true);
-            settings.setLoadWithOverviewMode(true);
-
-            // Enable pinch to zoom without the zoom buttons
-            settings.setBuiltInZoomControls(true);
-
-            // Allow use of Local Storage
-            settings.setDomStorageEnabled(true);
-
-            settings.setAllowFileAccessFromFileURLs(true);
-            settings.setAllowUniversalAccessFromFileURLs(true);
-
-
-            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.HONEYCOMB) {
-                // Hide the zoom controls for HONEYCOMB+
-                settings.setDisplayZoomControls(false);
-            }
-
-            // Enable remote debugging via chrome://inspect
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-                WebView.setWebContentsDebuggingEnabled(true);
-            }
-
-            mWebView.setWebViewClient(new WebViewClient());
-
-            // AppRTC requires third party cookies to work
-            android.webkit.CookieManager cookieManager = android.webkit.CookieManager.getInstance();
-            cookieManager.setAcceptThirdPartyCookies(mWebView, true);
-
-            final String url = "file:///android_asset/www/call.html";
-            mWebView.loadUrl(url);
-
-            mWebView.setWebChromeClient(new WebChromeClient() {
-
+            mAcceptButton.setOnClickListener(new View.OnClickListener() {
                 @Override
-                public void onPermissionRequest(final PermissionRequest request) {
-                    CallViewActivity.this.runOnUiThread(new Runnable() {
-                        @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-                        @Override
-                        public void run() {
-                            request.grant(request.getResources());
-                        }
-                    });
+                public void onClick(View v) {
+                    mCall.answer();
+                }
+            });
+
+            mRejectButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    mCall.hangup();
+                    // some dedicated behaviour here ?
+                }
+            });
+
+            mCancelButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    mCall.hangup();
+                    // some dedicated behaviour here ?
+                }
+            });
+
+            mStopButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    mCall.hangup();
+                    // some dedicated behaviour here ?
                 }
             });
         }
 
-        final Button callButton = (Button)findViewById(R.id.call_button);
+        String callState = mCall.callState();
 
-        callButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                //sendHangup();
-                sendAccept();
-            }
-        });
+        // hide / show avatar
+        ImageView avatarView = (ImageView)CallViewActivity.this.findViewById(R.id.call_other_member);
+        if (null != avatarView) {
+            avatarView.setVisibility((callState.equals(IMXCall.CALL_STATE_CONNECTED) && VIDEO_CALL.equals(mCallType)) ? View.GONE : View.VISIBLE);
+        }
 
-        instance = this;
-    }
-
-    public static CallViewActivity getInstance() {
-        return instance;
-    }
-
-    public static void addCandidate(JsonElement candidate) {
-        if (null != instance) {
-            instance.onNewCandidate(candidate);
+        // display the button according to the call state
+        if (callState.equals(IMXCall.CALL_STATE_CONNECTED)) {
+            mAcceptRejectLayout.setVisibility(View.GONE);
+            mCancelButton.setVisibility(View.GONE);
+            mStopButton.setVisibility(View.VISIBLE);
         } else {
-            synchronized (LOG_TAG) {
-                mPendingCandidates.add(candidate);
-            }
+            mAcceptRejectLayout.setVisibility(mDirection.equals(INBOUND_CALL) ? View.VISIBLE : View.GONE);
+            mCancelButton.setVisibility(mDirection.equals(OUTBOUND_CALL) ? View.VISIBLE : View.GONE);
+            mStopButton.setVisibility(View.GONE);
         }
-    }
-
-    public void checkPendingCandidates() {
-        synchronized (LOG_TAG) {
-            for(JsonElement candidate : mPendingCandidates) {
-                onNewCandidate(candidate);
-            }
-
-            mPendingCandidates.clear();
-        }
-    }
-
-    public void onCallAnswer(Event event) {
-        mWebView.loadUrl("javascript:receivedAnswer(" + event.content.toString() + ")");
-    }
-
-    public void onCallHangup(Event event) {
-        mWebView.loadUrl("javascript:onHangupReceived(" + event.content.toString() + ")");
-        CallViewActivity.this.mWebView.post(new Runnable() {
-            @Override
-            public void run() {
-                CallViewActivity.this.finish();
-            }
-        });
-    }
-
-    public void onNewCandidate(JsonElement candidate) {
-        mWebView.loadUrl("javascript:gotRemoteCandidate(" + candidate.toString() + ")");
-    }
-
-    public void sendHangup() {
-        mWebView.loadUrl("javascript:hangup()");
-    }
-
-    public void sendAccept() {
-        mWebView.loadUrl("javascript:answerCall()");
     }
 
     @Override
@@ -289,137 +312,16 @@ public class CallViewActivity extends FragmentActivity {
         // Always call the superclass so it can save the view hierarchy state
         super.onSaveInstanceState(savedInstanceState);
 
-        ViewGroup parent = (ViewGroup) mWebView.getParent();
-        parent.removeView(mWebView);
+        ViewGroup parent = (ViewGroup) mCallView.getParent();
+        parent.removeView(mCallView);
 
-        mSavedWebview = mWebView;
-        mSavedWebAppInterface = mCallWebAppInterface;
+        mSavedCallview = mCallView;
+        mCallView = null;
     }
 
     @Override
     public void onDestroy() {
+        mCall.removeListener(mListener);
         super.onDestroy();
-        instance = null;
-    }
-
-    private class CallWebAppInterface {
-        Context mContext;
-        String mAccessToKen;
-        String mRoomId;
-        String mUserId;
-        String mCallType;
-        String mInitMsg;
-        String mCallId;
-
-        CallWebAppInterface(Context context, String accessToken, String roomId, String userId, String callType, String initMsg, String callId)  {
-            mContext = context;
-            mAccessToKen = accessToken;
-            mRoomId = roomId;
-            mUserId = userId;
-            mCallType = callType;
-            mInitMsg = initMsg;
-            mCallId = callId;
-        }
-
-        public void answerCall() {
-
-        }
-
-        @JavascriptInterface
-        public String wgetAccessToken() {
-            return mAccessToKen;
-        }
-
-        @JavascriptInterface
-        public String wgetRoomId() {
-            return mRoomId;
-        }
-
-        @JavascriptInterface
-        public void wlog(String message) {
-            Log.e(LOG_TAG, "WebView Message : " + message);
-        }
-
-        @JavascriptInterface
-        public void wCallError(int code , String message) {
-            Log.e(LOG_TAG, "WebView error Message : " + message);
-        }
-
-        @JavascriptInterface
-        public void wEmit(String title , String message) {
-            Toast.makeText(mContext, title + " : " + message , Toast.LENGTH_LONG).show();
-        }
-
-        @JavascriptInterface
-        public String wgetUserId() {
-            return mUserId;
-        }
-
-        @JavascriptInterface
-        public void showToast(String toast)  {
-            Toast.makeText(mContext, toast, Toast.LENGTH_SHORT).show();
-        }
-
-        @JavascriptInterface
-        public void wOnLoaded() {
-            mWebView.post(new Runnable() {
-                @Override
-                public void run() {
-                    if (CallViewActivity.VIDEO_CALL.equals(mCallType)) {
-                        mWebView.loadUrl("javascript:placeVideoCall()");
-                    } else if (CallViewActivity.AUDIO_CALL.equals(mCallType)) {
-                        mWebView.loadUrl("javascript:placeVoiceCall()");
-                    } else if (null != mInitMsg) {
-                        mWebView.loadUrl("javascript:initWithInvite('" + mCallId + "'," + mInitMsg.toString() + ")");
-
-                        mWebView.post(new Runnable() {
-                                          @Override
-                                          public void run() {
-                                              CallViewActivity.this.checkPendingCandidates();
-                                          }
-                                      });
-
-                    }
-                }
-            });
-        }
-
-        @JavascriptInterface
-        public void wSendEvent(final String roomId, final String eventType, final String jsonContent) {
-            try {
-                JsonObject content = (JsonObject) new JsonParser().parse(jsonContent);
-
-                Toast.makeText(mContext, eventType, Toast.LENGTH_SHORT).show();
-
-                Event event = new Event(eventType, content, mSession.getCredentials().userId, mRoom.getRoomId());
-                mRoom.sendEvent(event, new ApiCallback<Void>() {
-                    @Override
-                    public void onSuccess(Void info) {
-                        if (eventType.equals(Event.EVENT_TYPE_CALL_HANGUP)) {
-                            CallViewActivity.this.mWebView.post(new Runnable() {
-                                @Override
-                                public void run() {
-                                    CallViewActivity.this.finish();
-                                }
-                            });
-                        }
-                    }
-
-                    @Override
-                    public void onNetworkError(Exception e) {
-                    }
-
-                    @Override
-                    public void onMatrixError(MatrixError e) {
-                    }
-
-                    @Override
-                    public void onUnexpectedError(Exception e) {
-                    }
-                });
-
-            } catch (Exception e) {
-            }
-        }
     }
 }

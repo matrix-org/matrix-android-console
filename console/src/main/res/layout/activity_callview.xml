@@ -5,26 +5,54 @@
     android:layout_height="match_parent" >
 
     <RelativeLayout
+        android:id="@+id/call_layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <WebView android:id="@+id/webview"
+        <ImageView
+            android:id="@+id/call_other_member"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#000"
+            android:scaleType="fitCenter"
             android:layout_alignParentTop="true"
             android:layout_alignParentLeft="true"
-            android:layout_width="fill_parent"
-            android:layout_height="fill_parent"
-            android:background="#000" />
+            />
+
+        <LinearLayout
+            android:layout_alignParentBottom="true"
+            android:id="@+id/layout_accept_reject"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" >
+
+            <Button
+                android:id="@+id/accept_button"
+                android:layout_width="0dp"
+                android:layout_weight="50"
+                android:layout_height="wrap_content"
+                android:text="@string/action_accept"/>
+
+            <Button
+                android:id="@+id/reject_button"
+                android:layout_width="0dp"
+                android:layout_weight="50"
+                android:layout_height="wrap_content"
+                android:text="@string/action_reject" />
+        </LinearLayout>
 
         <Button
-            android:id="@+id/call_button"
+            android:id="@+id/cancel_button"
             android:layout_width="match_parent"
             android:layout_height="50dp"
-            android:background="#F00"
             android:layout_alignParentBottom="true"
-            android:text="coucou"
-            />
+            android:text="@string/action_cancel"/>
+
+        <Button
+            android:id="@+id/stop_button"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_alignParentBottom="true"
+            android:text="@string/action_stop"/>
     </RelativeLayout>
-
-
 
 </RelativeLayout>
