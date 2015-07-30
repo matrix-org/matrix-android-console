@@ -16,12 +16,8 @@
 
 package org.matrix.console.activity;
 
-import android.annotation.TargetApi;
-import android.app.ActivityManager;
-import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
-import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
 import android.text.TextUtils;
@@ -29,36 +25,21 @@ import android.util.Log;
 
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewParent;
-import android.webkit.JavascriptInterface;
-import android.webkit.PermissionRequest;
-import android.webkit.WebChromeClient;
-import android.webkit.WebSettings;
-import android.webkit.WebView;
-import android.webkit.WebViewClient;
+import android.view.animation.Animation;
+import android.view.animation.TranslateAnimation;
 import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
-import android.widget.Toast;
-
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.squareup.okhttp.Call;
+import android.widget.TextView;
 
 import org.matrix.androidsdk.MXSession;
 import org.matrix.androidsdk.call.IMXCall;
-import org.matrix.androidsdk.call.MXChromeCall;
 import org.matrix.androidsdk.data.Room;
-import org.matrix.androidsdk.rest.callback.ApiCallback;
-import org.matrix.androidsdk.rest.model.Event;
-import org.matrix.androidsdk.rest.model.MatrixError;
 import org.matrix.androidsdk.rest.model.RoomMember;
 import org.matrix.console.Matrix;
 import org.matrix.console.R;
+import org.w3c.dom.Text;
 
-import java.util.ArrayList;
 import java.util.Collection;
 
 public class CallViewActivity extends FragmentActivity {
@@ -99,11 +80,18 @@ public class CallViewActivity extends FragmentActivity {
     private Button mAcceptButton;
     private Button mRejectButton;
     private Button mStopButton;
+    private TextView mCallStateTextView;
+    private TranslateAnimation mRingAnimation = null;
 
     private IMXCall.MXCallListener mListener = new IMXCall.MXCallListener() {
         @Override
         public void onStateDidChange(String state) {
-            manageSubViews();
+            mCallView.post(new Runnable() {
+                @Override
+                public void run() {
+                    manageSubViews();
+                }
+            });
         }
 
         @Override
@@ -150,6 +138,8 @@ public class CallViewActivity extends FragmentActivity {
         params.addRule(RelativeLayout.ALIGN_PARENT_LEFT, RelativeLayout.TRUE);
         params.addRule(RelativeLayout.ALIGN_PARENT_TOP, RelativeLayout.TRUE);
         layout.addView(mCallView, 1, params);
+
+        mCallView.setVisibility(View.GONE);
     }
 
     @Override
@@ -229,13 +219,16 @@ public class CallViewActivity extends FragmentActivity {
             return;
         }
 
-        // init the call button
-        manageSubViews();
-
-        if (null != mSavedCallview) {
+        // the webview has been saved after a screen rotation
+        // getParent() != null : the static value have been reused whereas it should not
+        if ((null != mSavedCallview) && (null == mSavedCallview.getParent())) {
             mCallView = mSavedCallview;
             insertCallView(mOtherMember.avatarUrl);
+            manageSubViews();
         } else {
+            mSavedCallview = null;
+            // init the call button
+            manageSubViews();
             mCall.createCallView();
         }
 
@@ -246,7 +239,6 @@ public class CallViewActivity extends FragmentActivity {
      * Init the buttons layer
      */
     private void manageSubViews() {
-
         // initialize buttons
         if (null == mAcceptRejectLayout) {
             mAcceptRejectLayout = findViewById(R.id.layout_accept_reject);
@@ -254,6 +246,7 @@ public class CallViewActivity extends FragmentActivity {
             mRejectButton = (Button) findViewById(R.id.reject_button);
             mCancelButton = (Button) findViewById(R.id.cancel_button);
             mStopButton = (Button) findViewById(R.id.stop_button);
+            mCallStateTextView = (TextView) findViewById(R.id.call_state_text);
 
             mAcceptButton.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -265,6 +258,7 @@ public class CallViewActivity extends FragmentActivity {
             mRejectButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
+                    mSavedCallview = null;
                     mCall.hangup();
                     // some dedicated behaviour here ?
                 }
@@ -273,6 +267,7 @@ public class CallViewActivity extends FragmentActivity {
             mCancelButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
+                    mSavedCallview = null;
                     mCall.hangup();
                     // some dedicated behaviour here ?
                 }
@@ -281,10 +276,13 @@ public class CallViewActivity extends FragmentActivity {
             mStopButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
+                    mSavedCallview = null;
                     mCall.hangup();
                     // some dedicated behaviour here ?
                 }
             });
+
+            mCallStateTextView.setText("");
         }
 
         String callState = mCall.callState();
@@ -296,7 +294,14 @@ public class CallViewActivity extends FragmentActivity {
         }
 
         // display the button according to the call state
-        if (callState.equals(IMXCall.CALL_STATE_CONNECTED)) {
+        if (callState.equals(IMXCall.CALL_STATE_ENDED)) {
+            mAcceptRejectLayout.setEnabled(false);
+            mAcceptRejectLayout.setAlpha(0.5f);
+            mCancelButton.setEnabled(false);
+            mCancelButton.setAlpha(0.5f);
+            mStopButton.setEnabled(false);
+            mStopButton.setAlpha(0.5f);
+        } else if (callState.equals(IMXCall.CALL_STATE_CONNECTED)) {
             mAcceptRejectLayout.setVisibility(View.GONE);
             mCancelButton.setVisibility(View.GONE);
             mStopButton.setVisibility(View.VISIBLE);
@@ -305,6 +310,41 @@ public class CallViewActivity extends FragmentActivity {
             mCancelButton.setVisibility(mDirection.equals(OUTBOUND_CALL) ? View.VISIBLE : View.GONE);
             mStopButton.setVisibility(View.GONE);
         }
+
+        // display the callview only when the preview is displayed
+        if (mCallType.equals(VIDEO_CALL) && !callState.equals(IMXCall.CALL_STATE_ENDED)) {
+            int visibility;
+
+            if (callState.equals(IMXCall.CALL_STATE_WAIT_CREATE_OFFER) ||
+                    callState.equals(IMXCall.CALL_STATE_INVITE_SENT) ||
+                    callState.equals(IMXCall.CALL_STATE_RINGING) ||
+                    callState.equals(IMXCall.CALL_STATE_CREATE_ANSWER) ||
+                    callState.equals(IMXCall.CALL_STATE_CONNECTING) ||
+                    callState.equals(IMXCall.CALL_STATE_CONNECTED)) {
+                visibility = View.VISIBLE;
+            } else {
+                visibility = View.GONE;
+            }
+
+            if ((null != mCallView) && (visibility != mCallView.getVisibility())) {
+                mCallView.setVisibility(visibility);
+            }
+        }
+
+        // display the callstate
+        if (callState.equals(IMXCall.CALL_STATE_CONNECTING)) {
+            mCallStateTextView.setText(getResources().getString(R.string.call_connecting));
+            mCallStateTextView.setVisibility(View.VISIBLE);
+        } else if (callState.equals(IMXCall.CALL_STATE_CONNECTED)) {
+            mCallStateTextView.setText(getResources().getString(R.string.call_connected));
+            mCallStateTextView.setVisibility(mCallType.equals(VIDEO_CALL) ? View.GONE : View.VISIBLE);
+        } else if (callState.equals(IMXCall.CALL_STATE_ENDED)) {
+            mCallStateTextView.setText(getResources().getString(R.string.call_ended));
+            mCallStateTextView.setVisibility(View.VISIBLE);
+        } else if (callState.equals(IMXCall.CALL_STATE_RINGING)) {
+            mCallStateTextView.setText(getResources().getString(R.string.call_ring));
+            mCallStateTextView.setVisibility(View.VISIBLE);
+        }
     }
 
     @Override
@@ -312,16 +352,18 @@ public class CallViewActivity extends FragmentActivity {
         // Always call the superclass so it can save the view hierarchy state
         super.onSaveInstanceState(savedInstanceState);
 
-        ViewGroup parent = (ViewGroup) mCallView.getParent();
-        parent.removeView(mCallView);
-
-        mSavedCallview = mCallView;
-        mCallView = null;
+        if (!mCall.callState().equals(IMXCall.CALL_STATE_ENDED)) {
+            ViewGroup parent = (ViewGroup) mCallView.getParent();
+            parent.removeView(mCallView);
+            mSavedCallview = mCallView;
+            mCallView = null;
+        }
     }
 
     @Override
     public void onDestroy() {
         mCall.removeListener(mListener);
+
         super.onDestroy();
     }
 }
