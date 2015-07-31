@@ -263,12 +263,9 @@ public class CallViewActivity extends FragmentActivity {
 
         // display the button according to the call state
         if (callState.equals(IMXCall.CALL_STATE_ENDED)) {
-            mAcceptRejectLayout.setEnabled(false);
-            mAcceptRejectLayout.setAlpha(0.5f);
-            mCancelButton.setEnabled(false);
-            mCancelButton.setAlpha(0.5f);
-            mStopButton.setEnabled(false);
-            mStopButton.setAlpha(0.5f);
+            mAcceptRejectLayout.setVisibility(View.GONE);
+            mCancelButton.setVisibility(View.GONE);
+            mStopButton.setVisibility(View.GONE);
         } else if (callState.equals(IMXCall.CALL_STATE_CONNECTED)) {
             mAcceptRejectLayout.setVisibility(View.GONE);
             mCancelButton.setVisibility(View.GONE);
@@ -298,9 +295,13 @@ public class CallViewActivity extends FragmentActivity {
                 mCallView.setVisibility(visibility);
             }
         }
-
+        
         // display the callstate
-        if (callState.equals(IMXCall.CALL_STATE_CONNECTING)) {
+        if (callState.equals(IMXCall.CALL_STATE_CONNECTING) || callState.equals(IMXCall.CALL_STATE_CREATE_ANSWER)
+                || callState.equals(IMXCall.CALL_STATE_WAIT_LOCAL_MEDIA) || callState.equals(IMXCall.CALL_STATE_WAIT_CREATE_OFFER)
+                ) {
+            mAcceptButton.setAlpha(0.5f);
+            mAcceptButton.setEnabled(false);
             mCallStateTextView.setText(getResources().getString(R.string.call_connecting));
             mCallStateTextView.setVisibility(View.VISIBLE);
         } else if (callState.equals(IMXCall.CALL_STATE_CONNECTED)) {
