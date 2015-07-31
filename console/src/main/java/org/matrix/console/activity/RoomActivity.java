@@ -862,13 +862,14 @@ public class RoomActivity extends MXCActionBarActivity {
                 IMXCall call = mSession.mCallsManager.createCallInRoom(mRoom.getRoomId());
 
                 if (null != call) {
+                    call.setIsVideo((id != R.id.ic_action_voice_call));
+                    call.setRoom(mRoom);
+                    call.setIsIncoming(false);
+
                     final Intent intent = new Intent(RoomActivity.this, CallViewActivity.class);
 
                     intent.putExtra(CallViewActivity.EXTRA_MATRIX_ID, mSession.getCredentials().userId);
-                    intent.putExtra(CallViewActivity.EXTRA_ROOM_ID, mRoom.getRoomId());
-                    intent.putExtra(CallViewActivity.EXTRA_CALL_TYPE, (id == R.id.ic_action_voice_call) ? CallViewActivity.AUDIO_CALL : CallViewActivity.VIDEO_CALL);
-                    intent.putExtra(CallViewActivity.EXTRA_DIRECTION, CallViewActivity.OUTBOUND_CALL);
-                    intent.putExtra(CallViewActivity.EXTRA_CALL_ID, call.callId());
+                    intent.putExtra(CallViewActivity.EXTRA_CALL_ID, call.getCallId());
 
                     RoomActivity.this.runOnUiThread(new Runnable() {
                         @Override

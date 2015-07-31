@@ -37,6 +37,8 @@ import android.widget.ExpandableListView;
 import android.widget.Toast;
 
 import org.matrix.androidsdk.MXSession;
+import org.matrix.androidsdk.call.IMXCall;
+import org.matrix.androidsdk.call.MXCallsManager;
 import org.matrix.androidsdk.data.Room;
 import org.matrix.androidsdk.data.RoomState;
 import org.matrix.androidsdk.data.RoomSummary;
@@ -137,6 +139,8 @@ public class HomeActivity extends MXCActionBarActivity {
     };
 
     private HashMap<MXSession, MXEventListener> mListenersBySession = new HashMap<MXSession, MXEventListener>();
+    private HashMap<MXSession, MXCallsManager.MXCallsManagerListener> mCallListenersBySession = new HashMap<MXSession, MXCallsManager.MXCallsManagerListener>();
+
     private ConsoleRoomSummaryAdapter mAdapter;
     private EditText mSearchRoomEditText;
 
@@ -730,6 +734,36 @@ public class HomeActivity extends MXCActionBarActivity {
 
         session.getDataHandler().addListener(listener);
         mListenersBySession.put(session, listener);
+
+
+        // call listener
+        MXCallsManager.MXCallsManagerListener callsManagerListener = new MXCallsManager.MXCallsManagerListener() {
+
+            /**
+             * Called when there is an incoming call within the room.
+             */
+            @Override
+            public void onIncomingCall(IMXCall call) {
+                // create the call object
+
+                if (null != call) {
+                    final Intent intent = new Intent(HomeActivity.this, CallViewActivity.class);
+
+                    intent.putExtra(CallViewActivity.EXTRA_MATRIX_ID, session.getCredentials().userId);
+                    intent.putExtra(CallViewActivity.EXTRA_CALL_ID, call.getCallId());
+
+                    HomeActivity.this.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            HomeActivity.this.startActivity(intent);
+                        }
+                    });
+                }
+            }
+        };
+
+        session.mCallsManager.addListener(callsManagerListener);
+        mCallListenersBySession.put(session, callsManagerListener);
     }
 
     /**
@@ -741,8 +775,12 @@ public class HomeActivity extends MXCActionBarActivity {
             session.getDataHandler().removeListener(mListenersBySession.get(session));
             mListenersBySession.remove(session);
         }
-    }
 
+        if (mCallListenersBySession.containsKey(session)) {
+            session.mCallsManager.removeListener(mCallListenersBySession.get(session));
+            mCallListenersBySession.remove(session);
+        }
+    }
 
     @Override
     public void onDestroy() {

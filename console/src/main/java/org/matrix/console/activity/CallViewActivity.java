@@ -45,16 +45,7 @@ import java.util.Collection;
 public class CallViewActivity extends FragmentActivity {
     private static final String LOG_TAG = "CallViewActivity";
 
-    public static final String VIDEO_CALL = "CallViewActivity.VIDEO_CALL";
-    public static final String AUDIO_CALL = "CallViewActivity.AUDIO_CALL";
-
-    public static final String INBOUND_CALL = "CallViewActivity.INBOUND_CALL";
-    public static final String OUTBOUND_CALL = "CallViewActivity.OUTBOUND_CALL";
-
     public static final String EXTRA_MATRIX_ID = "org.matrix.console.activity.CallViewActivity.EXTRA_MATRIX_ID";
-    public static final String EXTRA_ROOM_ID = "org.matrix.console.activity.CallViewActivity.EXTRA_ROOM_ID";
-    public static final String EXTRA_CALL_TYPE = "org.matrix.console.activity.CallViewActivity.EXTRA_CALL_TYPE";
-    public static final String EXTRA_DIRECTION = "org.matrix.console.activity.CallViewActivity.EXTRA_DIRECTION";
     public static final String EXTRA_CALL_ID = "org.matrix.console.activity.CallViewActivity.EXTRA_CALL_ID";
 
     private static View mSavedCallview = null;
@@ -62,15 +53,11 @@ public class CallViewActivity extends FragmentActivity {
     private View mCallView;
 
     // account info
-    private String mRoomId = null;
     private String mMatrixId = null;
     private String mCallId = null;
     private MXSession mSession = null;
-    private Room mRoom = null;
 
     // call info
-    private String mCallType = null;
-    private String mDirection = null;
     private IMXCall mCall = null;
     private RoomMember mOtherMember = null;
 
@@ -81,7 +68,6 @@ public class CallViewActivity extends FragmentActivity {
     private Button mRejectButton;
     private Button mStopButton;
     private TextView mCallStateTextView;
-    private TranslateAnimation mRingAnimation = null;
 
     private IMXCall.MXCallListener mListener = new IMXCall.MXCallListener() {
         @Override
@@ -108,8 +94,10 @@ public class CallViewActivity extends FragmentActivity {
 
         @Override
         public void onViewReady() {
-            if (mDirection.equals(OUTBOUND_CALL)) {
-                mCall.placeCall(CallViewActivity.VIDEO_CALL.equals(mCallType));
+            if (!mCall.isIncoming()) {
+                mCall.placeCall();
+            } else {
+                mCall.launchIncomingCall();
             }
         }
 
@@ -118,7 +106,6 @@ public class CallViewActivity extends FragmentActivity {
             CallViewActivity.this.finish();
         }
     };
-
 
     /**
      * Insert the callView in the activity (above the other room member)
@@ -154,12 +141,6 @@ public class CallViewActivity extends FragmentActivity {
             return;
         }
 
-        if (!intent.hasExtra(EXTRA_ROOM_ID)) {
-            Log.e(LOG_TAG, "No room ID extra.");
-            finish();
-            return;
-        }
-
         if (!intent.hasExtra(EXTRA_MATRIX_ID)) {
             Log.e(LOG_TAG, "No matrix ID extra.");
             finish();
@@ -167,20 +148,11 @@ public class CallViewActivity extends FragmentActivity {
         }
 
         mCallId = intent.getStringExtra(EXTRA_CALL_ID);
-        mRoomId = intent.getStringExtra(EXTRA_ROOM_ID);
         mMatrixId = intent.getStringExtra(EXTRA_MATRIX_ID);
-        mDirection = intent.getStringExtra(EXTRA_DIRECTION);
 
         mSession = Matrix.getInstance(getApplicationContext()).getSession(mMatrixId);
         if (null == mSession) {
             Log.e(LOG_TAG, "invalid session");
-            finish();
-            return;
-        }
-
-        mRoom = mSession.getDataHandler().getRoom(mRoomId);
-        if (null == mRoom) {
-            Log.e(LOG_TAG, "invalid room");
             finish();
             return;
         }
@@ -193,11 +165,7 @@ public class CallViewActivity extends FragmentActivity {
             return;
         }
 
-        if (intent.hasExtra(EXTRA_CALL_TYPE)) {
-            mCallType = intent.getStringExtra(EXTRA_CALL_TYPE);
-        }
-
-        Collection<RoomMember> members = mRoom.getMembers();
+        Collection<RoomMember> members = mCall.getRoom().getMembers();
 
         // must only be called in 1:1 room
         if ((null == members) || (members.size() != 2)) {
@@ -285,12 +253,12 @@ public class CallViewActivity extends FragmentActivity {
             mCallStateTextView.setText("");
         }
 
-        String callState = mCall.callState();
+        String callState = mCall.getCallState();
 
         // hide / show avatar
         ImageView avatarView = (ImageView)CallViewActivity.this.findViewById(R.id.call_other_member);
         if (null != avatarView) {
-            avatarView.setVisibility((callState.equals(IMXCall.CALL_STATE_CONNECTED) && VIDEO_CALL.equals(mCallType)) ? View.GONE : View.VISIBLE);
+            avatarView.setVisibility((callState.equals(IMXCall.CALL_STATE_CONNECTED) && mCall.isVideo()) ? View.GONE : View.VISIBLE);
         }
 
         // display the button according to the call state
@@ -306,13 +274,13 @@ public class CallViewActivity extends FragmentActivity {
             mCancelButton.setVisibility(View.GONE);
             mStopButton.setVisibility(View.VISIBLE);
         } else {
-            mAcceptRejectLayout.setVisibility(mDirection.equals(INBOUND_CALL) ? View.VISIBLE : View.GONE);
-            mCancelButton.setVisibility(mDirection.equals(OUTBOUND_CALL) ? View.VISIBLE : View.GONE);
+            mAcceptRejectLayout.setVisibility(mCall.isIncoming() ? View.VISIBLE : View.GONE);
+            mCancelButton.setVisibility(mCall.isIncoming() ?  View.GONE : View.VISIBLE);
             mStopButton.setVisibility(View.GONE);
         }
 
         // display the callview only when the preview is displayed
-        if (mCallType.equals(VIDEO_CALL) && !callState.equals(IMXCall.CALL_STATE_ENDED)) {
+        if (mCall.isVideo() && !callState.equals(IMXCall.CALL_STATE_ENDED)) {
             int visibility;
 
             if (callState.equals(IMXCall.CALL_STATE_WAIT_CREATE_OFFER) ||
@@ -337,7 +305,7 @@ public class CallViewActivity extends FragmentActivity {
             mCallStateTextView.setVisibility(View.VISIBLE);
         } else if (callState.equals(IMXCall.CALL_STATE_CONNECTED)) {
             mCallStateTextView.setText(getResources().getString(R.string.call_connected));
-            mCallStateTextView.setVisibility(mCallType.equals(VIDEO_CALL) ? View.GONE : View.VISIBLE);
+            mCallStateTextView.setVisibility(mCall.isVideo() ? View.GONE : View.VISIBLE);
         } else if (callState.equals(IMXCall.CALL_STATE_ENDED)) {
             mCallStateTextView.setText(getResources().getString(R.string.call_ended));
             mCallStateTextView.setVisibility(View.VISIBLE);
@@ -352,7 +320,7 @@ public class CallViewActivity extends FragmentActivity {
         // Always call the superclass so it can save the view hierarchy state
         super.onSaveInstanceState(savedInstanceState);
 
-        if (!mCall.callState().equals(IMXCall.CALL_STATE_ENDED)) {
+        if ((null != mCall) && !mCall.getCallState().equals(IMXCall.CALL_STATE_ENDED)) {
             ViewGroup parent = (ViewGroup) mCallView.getParent();
             parent.removeView(mCallView);
             mSavedCallview = mCallView;
@@ -362,8 +330,9 @@ public class CallViewActivity extends FragmentActivity {
 
     @Override
     public void onDestroy() {
-        mCall.removeListener(mListener);
-
+        if (null != mCall) {
+            mCall.removeListener(mListener);
+        }
         super.onDestroy();
     }
 }
