@@ -844,7 +844,7 @@ public class RoomActivity extends MXCActionBarActivity {
         getMenuInflater().inflate(R.menu.room, menu);
 
         // the calls are only allowed in 1:1 room
-        if (!mSession.isVoipCallSupported() || (mRoom.getMembers().size() != 2)) {
+        if (!mSession.isVoipCallSupported()) {
             menu.removeItem(R.id.ic_action_voice_call);
             menu.removeItem(R.id.ic_action_video_call);
         }
@@ -857,7 +857,7 @@ public class RoomActivity extends MXCActionBarActivity {
         int id = item.getItemId();
 
         if ((id == R.id.ic_action_voice_call) || (id == R.id.ic_action_video_call)) {
-            if (mSession.isVoipCallSupported() && (mRoom.getMembers().size() == 2)) {
+            if (mRoom.canPerformCall()) {
                 // create the call object
                 IMXCall call = mSession.mCallsManager.createCallInRoom(mRoom.getRoomId());
 
@@ -878,6 +878,8 @@ public class RoomActivity extends MXCActionBarActivity {
                         }
                     });
                 }
+            } else {
+                Toast.makeText(getApplicationContext(), "Not yet supported", Toast.LENGTH_LONG).show();
             }
         } else if (id == R.id.ic_action_invite_by_list) {
             FragmentManager fm = getSupportFragmentManager();
