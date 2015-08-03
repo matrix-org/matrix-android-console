@@ -17,6 +17,7 @@
 package org.matrix.console;
 import android.app.Activity;
 import android.app.Application;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
@@ -59,9 +60,14 @@ public class ConsoleApplication extends Application {
     private int VERSION_BUILD = -1;
     private String VERSION_STRING = "";
 
+    private static ConsoleApplication instance = null;
+
     @Override
     public void onCreate() {
         super.onCreate();
+
+        instance = this;
+
         mActivityTransitionTimer = null;
         mActivityTransitionTimerTask = null;
 
@@ -84,6 +90,10 @@ public class ConsoleApplication extends Application {
         ContactsManager.refreshLocalContactsSnapshot(this);
 
         isInBackground = false;
+    }
+
+    public static ConsoleApplication getInstance() {
+        return instance;
     }
 
     public void startActivityTransitionTimer() {
