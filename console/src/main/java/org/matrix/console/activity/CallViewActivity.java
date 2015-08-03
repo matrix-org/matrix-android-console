@@ -19,7 +19,10 @@ package org.matrix.console.activity;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.support.v4.app.DialogFragment;
+import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
+import android.support.v4.app.FragmentManager;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -36,8 +39,10 @@ import org.matrix.androidsdk.MXSession;
 import org.matrix.androidsdk.call.IMXCall;
 import org.matrix.androidsdk.data.Room;
 import org.matrix.androidsdk.rest.model.RoomMember;
+import org.matrix.console.ConsoleApplication;
 import org.matrix.console.Matrix;
 import org.matrix.console.R;
+import org.matrix.console.services.EventStreamService;
 import org.w3c.dom.Text;
 
 import java.util.Collection;
@@ -99,6 +104,14 @@ public class CallViewActivity extends FragmentActivity {
             } else {
                 mCall.launchIncomingCall();
             }
+        }
+
+        /**
+         * The call was answered on another device
+         */
+        @Override
+        public void onCallAnsweredElsewhere() {
+            CallViewActivity.this.finish();
         }
 
         @Override
@@ -201,6 +214,20 @@ public class CallViewActivity extends FragmentActivity {
         }
 
         mCall.addListener(mListener);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        ConsoleApplication.setCurrentActivity(null);
+        ((ConsoleApplication)getApplication()).startActivityTransitionTimer();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        ConsoleApplication.setCurrentActivity(this);
+        ((ConsoleApplication)getApplication()).stopActivityTransitionTimer();
     }
 
     /**
