@@ -845,7 +845,7 @@ public class RoomActivity extends MXCActionBarActivity {
 
         // the calls are only allowed in 1:1 room
         if (!mSession.isVoipCallSupported()) {
-            menu.removeItem(R.id.ic_action_voice_call);
+            //menu.removeItem(R.id.ic_action_voice_call);
             menu.removeItem(R.id.ic_action_video_call);
         }
 
