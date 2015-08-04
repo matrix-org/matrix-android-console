@@ -63,6 +63,7 @@
         <!-- activities list starts here -->
         <activity
             android:name="org.matrix.console.activity.LoginActivity"
+            android:screenOrientation="portrait"
             android:theme="@style/AppTheme.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
