@@ -17,6 +17,9 @@
 package org.matrix.console.fragments;
 
 import android.app.AlertDialog;
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
@@ -172,6 +175,13 @@ public class ConsoleMessageListFragment extends MatrixMessageListFragment implem
             !Event.EVENT_TYPE_STATE_ROOM_MEMBER.equals(messageRow.getEvent().type) &&
             !Event.EVENT_TYPE_STATE_ROOM_NAME.equals(messageRow.getEvent().type))
         {
+
+            // copy the message body
+            if ((Event.EVENT_TYPE_MESSAGE.equals(messageRow.getEvent().type)) && Message.MSGTYPE_TEXT.equals(message.msgtype)) {
+                textIds.add(R.string.copy);
+                iconIds.add(R.drawable.ic_material_copy);
+            }
+
             if (messageRow.getEvent().canBeResent()) {
                 textIds.add(R.string.resend);
                 iconIds.add(R.drawable.ic_material_send);
@@ -248,7 +258,19 @@ public class ConsoleMessageListFragment extends MatrixMessageListFragment implem
             public void onItemClick(IconAndTextDialogFragment dialogFragment, int position) {
                 final Integer selectedVal = textIds.get(position);
 
-                if (selectedVal == R.string.resend) {
+                if (selectedVal == R.string.copy) {
+                    getActivity().runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            ClipboardManager clipboard = (ClipboardManager) getActivity().getSystemService(Context.CLIPBOARD_SERVICE);
+                            Event event = messageRow.getEvent();
+                            Message message = JsonUtils.toMessage(event.content);
+
+                            ClipData clip = ClipData.newPlainText("", message.body);
+                            clipboard.setPrimaryClip(clip);
+                        }
+                    });
+                } else if (selectedVal == R.string.resend) {
                     getActivity().runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
