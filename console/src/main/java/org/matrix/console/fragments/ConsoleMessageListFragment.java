@@ -36,6 +36,7 @@ import android.widget.Toast;
 import org.matrix.androidsdk.MXSession;
 import org.matrix.androidsdk.adapters.MessageRow;
 import org.matrix.androidsdk.adapters.MessagesAdapter;
+import org.matrix.androidsdk.data.RoomState;
 import org.matrix.androidsdk.db.MXMediasCache;
 import org.matrix.androidsdk.fragments.IconAndTextDialogFragment;
 import org.matrix.androidsdk.fragments.MatrixMessageListFragment;
@@ -43,6 +44,7 @@ import org.matrix.androidsdk.rest.model.Event;
 import org.matrix.androidsdk.rest.model.FileMessage;
 import org.matrix.androidsdk.rest.model.ImageMessage;
 import org.matrix.androidsdk.rest.model.Message;
+import org.matrix.androidsdk.util.EventDisplay;
 import org.matrix.androidsdk.util.JsonUtils;
 import org.matrix.console.Matrix;
 import org.matrix.console.R;
@@ -171,10 +173,12 @@ public class ConsoleMessageListFragment extends MatrixMessageListFragment implem
         Uri mediaUri = null;
         Message message = JsonUtils.toMessage(messageRow.getEvent().content);
 
-        if (!Event.EVENT_TYPE_STATE_ROOM_TOPIC.equals(messageRow.getEvent().type) &&
-            !Event.EVENT_TYPE_STATE_ROOM_MEMBER.equals(messageRow.getEvent().type) &&
-            !Event.EVENT_TYPE_STATE_ROOM_NAME.equals(messageRow.getEvent().type))
-        {
+        if (Event.EVENT_TYPE_STATE_ROOM_TOPIC.equals(messageRow.getEvent().type) ||
+            Event.EVENT_TYPE_STATE_ROOM_MEMBER.equals(messageRow.getEvent().type) ||
+            Event.EVENT_TYPE_STATE_ROOM_NAME.equals(messageRow.getEvent().type)) {
+            textIds.add(R.string.copy);
+            iconIds.add(R.drawable.ic_material_copy);
+        } else  {
 
             // copy the message body
             if ((Event.EVENT_TYPE_MESSAGE.equals(messageRow.getEvent().type)) && Message.MSGTYPE_TEXT.equals(message.msgtype)) {
@@ -264,9 +268,20 @@ public class ConsoleMessageListFragment extends MatrixMessageListFragment implem
                         public void run() {
                             ClipboardManager clipboard = (ClipboardManager) getActivity().getSystemService(Context.CLIPBOARD_SERVICE);
                             Event event = messageRow.getEvent();
-                            Message message = JsonUtils.toMessage(event.content);
+                            String text = "";
 
-                            ClipData clip = ClipData.newPlainText("", message.body);
+                            if (Event.EVENT_TYPE_STATE_ROOM_TOPIC.equals(messageRow.getEvent().type) ||
+                                    Event.EVENT_TYPE_STATE_ROOM_MEMBER.equals(messageRow.getEvent().type) ||
+                                    Event.EVENT_TYPE_STATE_ROOM_NAME.equals(messageRow.getEvent().type)) {
+
+                                RoomState roomState = messageRow.getRoomState();
+                                EventDisplay display = new EventDisplay(getActivity(), event, roomState);
+                                text = display.getTextualDisplay().toString();
+                            } else {
+                                text = JsonUtils.toMessage(event.content).body;
+                            }
+
+                            ClipData clip = ClipData.newPlainText("", text);
                             clipboard.setPrimaryClip(clip);
                         }
                     });
