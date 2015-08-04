@@ -348,7 +348,7 @@ public class CallViewActivity extends FragmentActivity {
         // Always call the superclass so it can save the view hierarchy state
         super.onSaveInstanceState(savedInstanceState);
 
-        if ((null != mCall) && !mCall.getCallState().equals(IMXCall.CALL_STATE_ENDED)) {
+        if ((null != mCall) && !mCall.getCallState().equals(IMXCall.CALL_STATE_ENDED) && (null != mCallView.getParent())) {
             ViewGroup parent = (ViewGroup) mCallView.getParent();
             parent.removeView(mCallView);
             mSavedCallview = mCallView;
