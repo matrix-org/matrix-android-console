@@ -50,7 +50,7 @@
             <EditText
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
-                android:inputType="textCapSentences|textMultiLine"
+                android:inputType="textCapSentences|textMultiLine|textNoSuggestions|textVisiblePassword"
                 android:hint="Type here..."
                 android:id="@+id/editText_messageBox"
                 android:layout_centerHorizontal="true"/>
