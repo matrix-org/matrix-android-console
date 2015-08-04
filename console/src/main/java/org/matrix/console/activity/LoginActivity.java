@@ -17,6 +17,7 @@
 package org.matrix.console.activity;
 
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -63,6 +64,8 @@ public class LoginActivity extends MXCActionBarActivity {
             finish();
         }
 
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+        
         mLoginButton = (Button)findViewById(R.id.button_login);
         mLoginButton.setOnClickListener(new View.OnClickListener() {
             @Override
