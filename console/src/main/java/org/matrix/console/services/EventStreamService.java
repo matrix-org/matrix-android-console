@@ -287,16 +287,20 @@ public class EventStreamService extends Service {
         @Override
         public void onLiveEventsChunkProcessed() {
             if (null != mLatestNotification) {
-                NotificationManager nm = (NotificationManager) EventStreamService.this.getSystemService(Context.NOTIFICATION_SERVICE);
-                nm.cancelAll();
 
-                nm.notify(MSG_NOTIFICATION_ID, mLatestNotification);
+                try {
+                    NotificationManager nm = (NotificationManager) EventStreamService.this.getSystemService(Context.NOTIFICATION_SERVICE);
+                    nm.cancelAll();
+                    nm.notify(MSG_NOTIFICATION_ID, mLatestNotification);
 
-                // turn the screen on for 3 seconds
-                PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-                PowerManager.WakeLock wl = pm.newWakeLock(PowerManager.FULL_WAKE_LOCK, "MXEventListener");
-                wl.acquire(3000);
-                wl.release();
+                    // turn the screen on for 3 seconds
+                    PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+                    PowerManager.WakeLock wl = pm.newWakeLock(PowerManager.FULL_WAKE_LOCK, "MXEventListener");
+                    wl.acquire(3000);
+                    wl.release();
+                } catch (Exception e) {
+                    Log.e(LOG_TAG, "onLiveEventsChunkProcessed crashed "+ e.getLocalizedMessage());
+                }
 
                 mLatestNotification = null;
             }

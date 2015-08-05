@@ -159,27 +159,26 @@ public class NotificationUtils {
 
         builder.setTicker(from + name + body);
 
-        {
-            // Build the pending intent for when the notification is clicked
-            Intent roomIntent = new Intent(context, RoomActivity.class);
-            roomIntent.putExtra(RoomActivity.EXTRA_ROOM_ID, roomId);
+        // Build the pending intent for when the notification is clicked
+        Intent roomIntent = new Intent(context, RoomActivity.class);
+        roomIntent.putExtra(RoomActivity.EXTRA_ROOM_ID, roomId);
 
-            if (null != matrixId) {
-                roomIntent.putExtra(RoomActivity.EXTRA_MATRIX_ID, matrixId);
-            }
-
-            // Recreate the back stack
-            TaskStackBuilder stackBuilder = TaskStackBuilder.create(context)
-                    .addParentStack(RoomActivity.class)
-                    .addNextIntent(roomIntent);
-
-
-            // android 4.3 issue
-            // use a generator for the private requestCode.
-            // When using 0, the intent is not created/launched when the user taps on the notification.
-            //
-            builder.setContentIntent(stackBuilder.getPendingIntent((new Random()).nextInt(1000), PendingIntent.FLAG_UPDATE_CURRENT));
+        if (null != matrixId) {
+            roomIntent.putExtra(RoomActivity.EXTRA_MATRIX_ID, matrixId);
         }
+
+        // Recreate the back stack
+        TaskStackBuilder stackBuilder = TaskStackBuilder.create(context)
+                .addParentStack(RoomActivity.class)
+                .addNextIntent(roomIntent);
+
+
+        // android 4.3 issue
+        // use a generator for the private requestCode.
+        // When using 0, the intent is not created/launched when the user taps on the notification.
+        //
+        PendingIntent pendingIntent = stackBuilder.getPendingIntent((new Random()).nextInt(1000), PendingIntent.FLAG_UPDATE_CURRENT);
+        builder.setContentIntent(pendingIntent);
 
         // display the message with more than 1 lines when the device supports it
         NotificationCompat.BigTextStyle textStyle = new NotificationCompat.BigTextStyle();
@@ -230,6 +229,11 @@ public class NotificationUtils {
         if (shouldPlaySound) {
             n.defaults |= Notification.DEFAULT_SOUND;
         }
+
+        // some devices crash if this field is not set
+        // even if it is deprecated
+        n.setLatestEventInfo(context, from, body, pendingIntent);
+
         return n;
     }
 
