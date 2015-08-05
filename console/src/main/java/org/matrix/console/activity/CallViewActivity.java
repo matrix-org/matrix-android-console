@@ -180,12 +180,7 @@ public class CallViewActivity extends FragmentActivity {
 
         Collection<RoomMember> members = mCall.getRoom().getMembers();
 
-        // must only be called in 1:1 room
-        if ((null == members) || (members.size() != 2)) {
-            Log.e(LOG_TAG, "invalid members count");
-            finish();
-            return;
-        }
+
 
         for(RoomMember m : members) {
             if (!mSession.getCredentials().userId.equals(m.getUserId())) {
