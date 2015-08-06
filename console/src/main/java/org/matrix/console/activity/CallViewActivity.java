@@ -68,6 +68,7 @@ public class CallViewActivity extends FragmentActivity {
     private Button mAcceptButton;
     private Button mRejectButton;
     private Button mStopButton;
+    private ImageView mSpeakerSelectionView;
     private TextView mCallStateTextView;
 
     // sounds management
@@ -253,6 +254,21 @@ public class CallViewActivity extends FragmentActivity {
         ((ConsoleApplication)getApplication()).stopActivityTransitionTimer();
     }
 
+    private void refreshSpeakerButton() {
+        if ((null != mCall) && mCall.getCallState().equals(IMXCall.CALL_STATE_CONNECTED)) {
+            mSpeakerSelectionView.setVisibility(View.VISIBLE);
+
+            AudioManager audioManager = (AudioManager) CallViewActivity.this.getSystemService(Context.AUDIO_SERVICE);
+            if (audioManager.isSpeakerphoneOn()) {
+                mSpeakerSelectionView.setImageResource(R.drawable.ic_material_call);
+            } else {
+                mSpeakerSelectionView.setImageResource(R.drawable.ic_material_volume);
+            }
+        } else {
+            mSpeakerSelectionView.setVisibility(View.GONE);
+        }
+    }
+
     /**
      * Init the buttons layer
      */
@@ -264,6 +280,8 @@ public class CallViewActivity extends FragmentActivity {
             mRejectButton = (Button) findViewById(R.id.reject_button);
             mCancelButton = (Button) findViewById(R.id.cancel_button);
             mStopButton = (Button) findViewById(R.id.stop_button);
+            mSpeakerSelectionView = (ImageView) findViewById(R.id.call_speaker_view);
+
             mCallStateTextView = (TextView) findViewById(R.id.call_state_text);
 
             mAcceptButton.setOnClickListener(new View.OnClickListener() {
@@ -300,6 +318,15 @@ public class CallViewActivity extends FragmentActivity {
                 }
             });
 
+            mSpeakerSelectionView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    AudioManager audioManager = (AudioManager)CallViewActivity.this.getSystemService(Context.AUDIO_SERVICE);
+                    audioManager.setSpeakerphoneOn(!audioManager.isSpeakerphoneOn());
+                    refreshSpeakerButton();
+                }
+            });
+
             mCallStateTextView.setText("");
         }
 
@@ -310,6 +337,8 @@ public class CallViewActivity extends FragmentActivity {
         if (null != avatarView) {
             avatarView.setVisibility((callState.equals(IMXCall.CALL_STATE_CONNECTED) && mCall.isVideo()) ? View.GONE : View.VISIBLE);
         }
+
+        refreshSpeakerButton();
 
         // display the button according to the call state
         if (callState.equals(IMXCall.CALL_STATE_ENDED)) {
@@ -357,6 +386,16 @@ public class CallViewActivity extends FragmentActivity {
             stopRinging();
         } else if (callState.equals(IMXCall.CALL_STATE_CONNECTED)) {
             stopRinging();
+
+            CallViewActivity.this.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    AudioManager audioManager = (AudioManager) CallViewActivity.this.getSystemService(Context.AUDIO_SERVICE);
+                    audioManager.setSpeakerphoneOn(mCall.isVideo());
+                    refreshSpeakerButton();
+                }
+            });
+
             mCallStateTextView.setText(getResources().getString(R.string.call_connected));
             mCallStateTextView.setVisibility(mCall.isVideo() ? View.GONE : View.VISIBLE);
         } else if (callState.equals(IMXCall.CALL_STATE_ENDED)) {

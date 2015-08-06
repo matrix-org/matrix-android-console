@@ -71,6 +71,17 @@
             android:textColor="#FFF"
             />
 
+        <ImageView
+            android:id="@+id/call_speaker_view"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginRight="10dp"
+            android:background="#FFF"
+            android:scaleType="fitCenter"
+            android:layout_alignTop="@+id/call_state_text"
+            android:layout_alignParentRight="true"
+            />
+
     </RelativeLayout>
 
 </RelativeLayout>
