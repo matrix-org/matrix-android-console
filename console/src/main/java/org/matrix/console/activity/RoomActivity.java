@@ -164,6 +164,9 @@ public class RoomActivity extends MXCActionBarActivity {
     private String mPendingMimeType;
     private String mPendingFilename;
 
+    private MenuItem mVoiceMenuItem = null;
+    private MenuItem mVideoMenuItem = null;
+
     private String mLatestTakePictureCameraUri; // has to be String not Uri because of Serializable
 
     // typing event management
@@ -188,6 +191,7 @@ public class RoomActivity extends MXCActionBarActivity {
                             || Event.EVENT_TYPE_STATE_ROOM_ALIASES.equals(event.type)
                             || Event.EVENT_TYPE_STATE_ROOM_MEMBER.equals(event.type)) {
                         setTitle(mRoom.getName(mMyUserId));
+                        updateCallMenuEntries();
 
                         // check if the user does not leave the room with another client
                         if (Event.EVENT_TYPE_STATE_ROOM_MEMBER.equals(event.type) && mMyUserId.equals(event.stateKey)) {
@@ -222,6 +226,8 @@ public class RoomActivity extends MXCActionBarActivity {
                     setTopic(mRoom.getTopic());
 
                     mConsoleMessageListFragment.onInitialMessagesLoaded();
+
+                    updateCallMenuEntries();
                 }
             });
         }
@@ -822,6 +828,8 @@ public class RoomActivity extends MXCActionBarActivity {
 
         manageSendMoreButtons();
 
+        updateCallMenuEntries();
+
         // refresh the UI : the timezone could have been updated
         mConsoleMessageListFragment.refresh();
 
@@ -838,16 +846,30 @@ public class RoomActivity extends MXCActionBarActivity {
         }
     }
 
+    /**
+     * Refresh the calls buttons
+     */
+    private void updateCallMenuEntries() {
+        Boolean visible = mRoom.canPerformCall() && mSession.isVoipCallSupported();
+
+        if (null != mVoiceMenuItem) {
+            mVoiceMenuItem.setVisible(visible);
+        }
+
+        if (null != mVideoMenuItem) {
+            mVideoMenuItem.setVisible(visible);
+        }
+    }
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.room, menu);
 
-        // the calls are only allowed in 1:1 room
-        if (!mSession.isVoipCallSupported()) {
-            menu.removeItem(R.id.ic_action_voice_call);
-            menu.removeItem(R.id.ic_action_video_call);
-        }
+        mVoiceMenuItem = menu.findItem(R.id.ic_action_voice_call);
+        mVideoMenuItem = menu.findItem(R.id.ic_action_video_call);
+
+        updateCallMenuEntries();
 
         return true;
     }
@@ -857,29 +879,25 @@ public class RoomActivity extends MXCActionBarActivity {
         int id = item.getItemId();
 
         if ((id == R.id.ic_action_voice_call) || (id == R.id.ic_action_video_call)) {
-            if (mRoom.canPerformCall()) {
-                // create the call object
-                IMXCall call = mSession.mCallsManager.createCallInRoom(mRoom.getRoomId());
+            // create the call object
+            IMXCall call = mSession.mCallsManager.createCallInRoom(mRoom.getRoomId());
 
-                if (null != call) {
-                    call.setIsVideo((id != R.id.ic_action_voice_call));
-                    call.setRoom(mRoom);
-                    call.setIsIncoming(false);
+            if (null != call) {
+                call.setIsVideo((id != R.id.ic_action_voice_call));
+                call.setRoom(mRoom);
+                call.setIsIncoming(false);
 
-                    final Intent intent = new Intent(RoomActivity.this, CallViewActivity.class);
+                final Intent intent = new Intent(RoomActivity.this, CallViewActivity.class);
 
-                    intent.putExtra(CallViewActivity.EXTRA_MATRIX_ID, mSession.getCredentials().userId);
-                    intent.putExtra(CallViewActivity.EXTRA_CALL_ID, call.getCallId());
+                intent.putExtra(CallViewActivity.EXTRA_MATRIX_ID, mSession.getCredentials().userId);
+                intent.putExtra(CallViewActivity.EXTRA_CALL_ID, call.getCallId());
 
-                    RoomActivity.this.runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            RoomActivity.this.startActivity(intent);
-                        }
-                    });
-                }
-            } else {
-                Toast.makeText(getApplicationContext(), "Not yet supported", Toast.LENGTH_LONG).show();
+                RoomActivity.this.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        RoomActivity.this.startActivity(intent);
+                    }
+                });
             }
         } else if (id == R.id.ic_action_invite_by_list) {
             FragmentManager fm = getSupportFragmentManager();

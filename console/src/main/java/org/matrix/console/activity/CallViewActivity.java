@@ -178,22 +178,8 @@ public class CallViewActivity extends FragmentActivity {
             return;
         }
 
-        Collection<RoomMember> members = mCall.getRoom().getMembers();
-
-
-
-        for(RoomMember m : members) {
-            if (!mSession.getCredentials().userId.equals(m.getUserId())) {
-                mOtherMember = m;
-            }
-        }
-
-        // invalid member
-        if (null == mOtherMember) {
-            Log.e(LOG_TAG, "invalid member");
-            finish();
-            return;
-        }
+        // assume that it is a 1:1 call.
+        mOtherMember = mCall.getRoom().callees().get(0);
 
         // the webview has been saved after a screen rotation
         // getParent() != null : the static value have been reused whereas it should not
@@ -333,7 +319,15 @@ public class CallViewActivity extends FragmentActivity {
             mCallStateTextView.setText(getResources().getString(R.string.call_ended));
             mCallStateTextView.setVisibility(View.VISIBLE);
         } else if (callState.equals(IMXCall.CALL_STATE_RINGING)) {
-            mCallStateTextView.setText(getResources().getString(R.string.call_ring));
+            if (mCall.isIncoming()) {
+                if (mCall.isVideo()) {
+                    mCallStateTextView.setText(getResources().getString(R.string.incoming_video_call));
+                } else {
+                    mCallStateTextView.setText(getResources().getString(R.string.incoming_voice_call));
+                }
+            } else {
+                mCallStateTextView.setText(getResources().getString(R.string.call_ring));
+            }
             mCallStateTextView.setVisibility(View.VISIBLE);
         }
     }
