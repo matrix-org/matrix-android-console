@@ -179,9 +179,7 @@ public class HomeActivity extends MXCActionBarActivity {
         }
     }
 
-
     private void joinPublicRoom(final String homeServerURL, final PublicRoom publicRoom) {
-
         Collection<MXSession> sessions = Matrix.getMXSessions(HomeActivity.this);
         ArrayList<MXSession> matchedSessions = new ArrayList<MXSession>();
 
@@ -744,20 +742,22 @@ public class HomeActivity extends MXCActionBarActivity {
              */
             @Override
             public void onIncomingCall(IMXCall call) {
-                // create the call object
+                // can only manage one call instance.
+                if (null == CallViewActivity.getInstance()) {
+                    // create the call object
+                    if (null != call) {
+                        final Intent intent = new Intent(HomeActivity.this, CallViewActivity.class);
 
-                if (null != call) {
-                    final Intent intent = new Intent(HomeActivity.this, CallViewActivity.class);
+                        intent.putExtra(CallViewActivity.EXTRA_MATRIX_ID, session.getCredentials().userId);
+                        intent.putExtra(CallViewActivity.EXTRA_CALL_ID, call.getCallId());
 
-                    intent.putExtra(CallViewActivity.EXTRA_MATRIX_ID, session.getCredentials().userId);
-                    intent.putExtra(CallViewActivity.EXTRA_CALL_ID, call.getCallId());
-
-                    HomeActivity.this.runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            HomeActivity.this.startActivity(intent);
-                        }
-                    });
+                        HomeActivity.this.runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                HomeActivity.this.startActivity(intent);
+                            }
+                        });
+                    }
                 }
             }
         };

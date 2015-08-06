@@ -16,20 +16,19 @@
 
 package org.matrix.console.activity;
 
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
+import android.media.AudioManager;
+import android.media.MediaPlayer;
 import android.os.Bundle;
-import android.support.v4.app.DialogFragment;
-import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
-import android.support.v4.app.FragmentManager;
 import android.text.TextUtils;
 import android.util.Log;
 
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.Animation;
-import android.view.animation.TranslateAnimation;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
@@ -37,15 +36,10 @@ import android.widget.TextView;
 
 import org.matrix.androidsdk.MXSession;
 import org.matrix.androidsdk.call.IMXCall;
-import org.matrix.androidsdk.data.Room;
 import org.matrix.androidsdk.rest.model.RoomMember;
 import org.matrix.console.ConsoleApplication;
 import org.matrix.console.Matrix;
 import org.matrix.console.R;
-import org.matrix.console.services.EventStreamService;
-import org.w3c.dom.Text;
-
-import java.util.Collection;
 
 public class CallViewActivity extends FragmentActivity {
     private static final String LOG_TAG = "CallViewActivity";
@@ -53,8 +47,9 @@ public class CallViewActivity extends FragmentActivity {
     public static final String EXTRA_MATRIX_ID = "org.matrix.console.activity.CallViewActivity.EXTRA_MATRIX_ID";
     public static final String EXTRA_CALL_ID = "org.matrix.console.activity.CallViewActivity.EXTRA_CALL_ID";
 
-    private static View mSavedCallview = null;
+    private static CallViewActivity instance = null;
 
+    private static View mSavedCallview = null;
     private View mCallView;
 
     // account info
@@ -65,6 +60,7 @@ public class CallViewActivity extends FragmentActivity {
     // call info
     private IMXCall mCall = null;
     private RoomMember mOtherMember = null;
+    private Boolean mIsAnsweredElsewhere = false;
 
     // graphical items
     private View mAcceptRejectLayout;
@@ -73,6 +69,13 @@ public class CallViewActivity extends FragmentActivity {
     private Button mRejectButton;
     private Button mStopButton;
     private TextView mCallStateTextView;
+
+    // sounds management
+    private static MediaPlayer mRingingPLayer = null;
+    private static MediaPlayer mCallEndPlayer = null;
+    private static final int DEFAULT_PERCENT_VOLUME = 10;
+    private static final int FIRST_PERCENT_VOLUME = 10;
+    private static boolean firstCallAlert = true;
 
     private IMXCall.MXCallListener mListener = new IMXCall.MXCallListener() {
         @Override
@@ -111,6 +114,7 @@ public class CallViewActivity extends FragmentActivity {
          */
         @Override
         public void onCallAnsweredElsewhere() {
+            mIsAnsweredElsewhere = true;
             CallViewActivity.this.finish();
         }
 
@@ -119,6 +123,10 @@ public class CallViewActivity extends FragmentActivity {
             CallViewActivity.this.finish();
         }
     };
+
+    public static CallViewActivity getInstance() {
+        return instance;
+    }
 
     /**
      * Insert the callView in the activity (above the other room member)
@@ -178,6 +186,20 @@ public class CallViewActivity extends FragmentActivity {
             return;
         }
 
+        if (null == mRingingPLayer) {
+            mRingingPLayer = MediaPlayer.create(this, R.raw.ring);
+            mRingingPLayer.setLooping(true);
+            mRingingPLayer.setVolume(1.0f, 1.0f);
+        }
+
+        if (null == mCallEndPlayer) {
+            mCallEndPlayer = MediaPlayer.create(this, R.raw.callend);
+            mCallEndPlayer.setLooping(false);
+            mCallEndPlayer.setVolume(1.0f, 1.0f);
+        }
+
+        initMediaPlayerVolume();
+
         // assume that it is a 1:1 call.
         mOtherMember = mCall.getRoom().callees().get(0);
 
@@ -195,6 +217,26 @@ public class CallViewActivity extends FragmentActivity {
         }
 
         mCall.addListener(mListener);
+
+        instance = null;
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        // assume that the user cancels the call if it is ringing
+        if ((keyCode == KeyEvent.KEYCODE_BACK)) {
+            if ((null != mCall) && mCall.getCallState().equals(IMXCall.CALL_STATE_RINGING)) {
+                mCall.hangup();
+            }
+        }
+
+        return super.onKeyDown(keyCode, event);
+    }
+
+    @Override
+    public void finish() {
+        super.finish();
+        instance = null;
     }
 
     @Override
@@ -312,13 +354,17 @@ public class CallViewActivity extends FragmentActivity {
             //mAcceptButton.setEnabled(false);
             mCallStateTextView.setText(getResources().getString(R.string.call_connecting));
             mCallStateTextView.setVisibility(View.VISIBLE);
+            stopRinging();
         } else if (callState.equals(IMXCall.CALL_STATE_CONNECTED)) {
+            stopRinging();
             mCallStateTextView.setText(getResources().getString(R.string.call_connected));
             mCallStateTextView.setVisibility(mCall.isVideo() ? View.GONE : View.VISIBLE);
         } else if (callState.equals(IMXCall.CALL_STATE_ENDED)) {
+            startEndCallSound();
             mCallStateTextView.setText(getResources().getString(R.string.call_ended));
             mCallStateTextView.setVisibility(View.VISIBLE);
         } else if (callState.equals(IMXCall.CALL_STATE_RINGING)) {
+            startRinging();
             if (mCall.isIncoming()) {
                 if (mCall.isVideo()) {
                     mCallStateTextView.setText(getResources().getString(R.string.incoming_video_call));
@@ -351,5 +397,89 @@ public class CallViewActivity extends FragmentActivity {
             mCall.removeListener(mListener);
         }
         super.onDestroy();
+    }
+
+    /**
+     * Initialize the audio volume.
+     */
+    private void initMediaPlayerVolume() {
+        AudioManager audioManager = (AudioManager)this.getSystemService(Context.AUDIO_SERVICE);
+
+        // use the ringing volume to initialize the playing volume
+        // it does not make sense to ring louder
+        int maxVol = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+        int minValue = firstCallAlert ? FIRST_PERCENT_VOLUME : DEFAULT_PERCENT_VOLUME;
+        int ratio = (audioManager.getStreamVolume(AudioManager.STREAM_MUSIC) * 100) / maxVol;
+
+        firstCallAlert = false;
+
+        // ensure there is a minimum audio level
+        // some users could complain they did not hear their device was ringing.
+        if (ratio < minValue) {
+            setMediaPlayerVolume(minValue);
+        }
+        else {
+            setMediaPlayerVolume(ratio);
+        }
+    }
+
+    private void setMediaPlayerVolume(int percent) {
+        if(percent < 0 || percent > 100) {
+            Log.e(LOG_TAG,"setMediaPlayerVolume percent is invalid: "+percent);
+            return;
+        }
+
+        AudioManager audioManager = (AudioManager)this.getSystemService(Context.AUDIO_SERVICE);
+        int maxVol = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+        if(maxVol > 0) {
+            audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, (int) ((float) ((float) percent / 100f) * maxVol), 0);
+        }
+        Log.i(LOG_TAG, "Set media volume (ringback) to: " + audioManager.getStreamVolume(AudioManager.STREAM_MUSIC));
+    }
+
+    /**
+     * @return true if the ringing sound is played
+     */
+    private static Boolean isRinging() {
+        if (null != mRingingPLayer) {
+            return mRingingPLayer.isPlaying();
+        }
+        return false;
+    }
+    /**
+     * Start the ringing sound
+     */
+    private static void startRinging() {
+        if (null != mRingingPLayer) {
+            // check if it is not yet playing
+            if (!mRingingPLayer.isPlaying()) {
+                // stop pending
+                if ((null != mCallEndPlayer) && mCallEndPlayer.isPlaying()) {
+                    mCallEndPlayer.stop();
+                }
+                mRingingPLayer.start();
+            }
+        }
+    }
+
+    /**
+     * Stop the ringing sound
+     */
+    private static void stopRinging() {
+        // sanity checks
+        if ((null != mRingingPLayer) && mRingingPLayer.isPlaying()) {
+            mRingingPLayer.pause();
+        }
+    }
+
+    /**
+     * Start the end call sound
+     */
+    private static void startEndCallSound() {
+        // sanity checks
+        if ((null != mCallEndPlayer) && !mCallEndPlayer.isPlaying()) {
+            mCallEndPlayer.start();
+        }
+        stopRinging();
     }
 }
