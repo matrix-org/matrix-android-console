@@ -71,14 +71,14 @@
     <string name="other">Other</string>
 
     <string name="my_rooms">My rooms</string>
-    <string name="create_room">Create room</string>
-    <string name="join_room">Join room</string>
+    <string name="create_room">Create Room</string>
+    <string name="join_room">Join Room</string>
     <string name="create">Create:</string>
     <string name="username">Username</string>
     <string name="password">Password</string>
     <string name="matrix_login">Matrix Login</string>
     <string name="login">Login</string>
-    <string name="create_account">Create account</string>
+    <string name="create_account">Create Account</string>
     <string name="hs_url">Home Server URL</string>
 
     <string name="create_room_set_alias">Set room alias</string>
