@@ -77,6 +77,7 @@ public class CallViewActivity extends FragmentActivity {
     private static final int DEFAULT_PERCENT_VOLUME = 10;
     private static final int FIRST_PERCENT_VOLUME = 10;
     private static boolean firstCallAlert = true;
+    private static int mCallVolume = 0;
 
     private IMXCall.MXCallListener mListener = new IMXCall.MXCallListener() {
         @Override
@@ -225,9 +226,18 @@ public class CallViewActivity extends FragmentActivity {
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         // assume that the user cancels the call if it is ringing
-        if ((keyCode == KeyEvent.KEYCODE_BACK)) {
+        if (keyCode == KeyEvent.KEYCODE_BACK) {
             if ((null != mCall) && mCall.getCallState().equals(IMXCall.CALL_STATE_RINGING)) {
                 mCall.hangup("");
+            }
+        } else if ((keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) || (keyCode == KeyEvent.KEYCODE_VOLUME_UP)) {
+
+            // this is a trick to reduce the ring volume :
+            // when the call is ringing, the AudioManager.Mode switch to MODE_IN_COMMUNICATION
+            // so the volume is the next call one whereas the user expects to reduce the ring volme.
+            if ((null != mCall) && mCall.getCallState().equals(IMXCall.CALL_STATE_RINGING)) {
+                AudioManager audioManager = (AudioManager) CallViewActivity.this.getSystemService(Context.AUDIO_SERVICE);
+                audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, audioManager.getStreamVolume(AudioManager.STREAM_VOICE_CALL), 0);
             }
         }
 
@@ -322,8 +332,13 @@ public class CallViewActivity extends FragmentActivity {
                 @Override
                 public void onClick(View v) {
                     AudioManager audioManager = (AudioManager)CallViewActivity.this.getSystemService(Context.AUDIO_SERVICE);
-                    audioManager.setSpeakerphoneOn(!audioManager.isSpeakerphoneOn());
-                    refreshSpeakerButton();
+
+                    // ignore speaker button if a bluetooth headset is connected
+                    if (!audioManager.isBluetoothA2dpOn())
+                    {
+                        audioManager.setSpeakerphoneOn(!audioManager.isSpeakerphoneOn());
+                        refreshSpeakerButton();
+                    }
                 }
             });
 
@@ -391,6 +406,7 @@ public class CallViewActivity extends FragmentActivity {
                 @Override
                 public void run() {
                     AudioManager audioManager = (AudioManager) CallViewActivity.this.getSystemService(Context.AUDIO_SERVICE);
+                    audioManager.setStreamVolume(AudioManager.STREAM_VOICE_CALL, mCallVolume, 0);
                     audioManager.setSpeakerphoneOn(mCall.isVideo());
                     refreshSpeakerButton();
                 }
@@ -469,9 +485,14 @@ public class CallViewActivity extends FragmentActivity {
         }
 
         AudioManager audioManager = (AudioManager)this.getSystemService(Context.AUDIO_SERVICE);
+
+        mCallVolume = audioManager.getStreamVolume(AudioManager.STREAM_VOICE_CALL);
+
         int maxVol = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
         if(maxVol > 0) {
-            audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, (int) ((float) ((float) percent / 100f) * maxVol), 0);
+            int volume = (int) ((float) percent / 100f * maxVol);
+            audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, volume, 0);
+            audioManager.setStreamVolume(AudioManager.STREAM_VOICE_CALL, volume, 0);
         }
         Log.i(LOG_TAG, "Set media volume (ringback) to: " + audioManager.getStreamVolume(AudioManager.STREAM_MUSIC));
     }
