@@ -108,6 +108,8 @@ public class HomeActivity extends MXCActionBarActivity {
 
     private boolean refreshOnChunkEnd = false;
 
+    private MenuItem mCallMenuItem = null;
+
     // sliding menu
     private final Integer[] mSlideMenuTitleIds = new Integer[]{
             //R.string.action_search_contact,
@@ -743,7 +745,7 @@ public class HomeActivity extends MXCActionBarActivity {
             @Override
             public void onIncomingCall(final IMXCall call) {
                 // can only manage one call instance.
-                if (null == CallViewActivity.getInstance()) {
+                if (null == CallViewActivity.getActiveCall()) {
                     // create the call object
                     if (null != call) {
                         final Intent intent = new Intent(HomeActivity.this, CallViewActivity.class);
@@ -766,6 +768,19 @@ public class HomeActivity extends MXCActionBarActivity {
                         }
                     });
                 }
+            }
+
+            /**
+             * Called when a called has been hung up
+             */
+            @Override
+            public void onCallHangUp(IMXCall call) {
+                HomeActivity.this.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        HomeActivity.this.manageCallButton();
+                    }
+                });
             }
         };
 
@@ -876,6 +891,7 @@ public class HomeActivity extends MXCActionBarActivity {
         }
 
         refreshSlidingList();
+        manageCallButton();
     }
 
     @Override
@@ -949,10 +965,24 @@ public class HomeActivity extends MXCActionBarActivity {
         return super.onKeyDown(keyCode, event);
     }
 
+    /**
+     * Display or hide the the call button.
+     * it is used to resume a call.
+     */
+    private void manageCallButton() {
+        if (null != mCallMenuItem) {
+            mCallMenuItem.setVisible(CallViewActivity.getActiveCall() != null);
+        }
+    }
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.home, menu);
+
+        mCallMenuItem = menu.findItem(R.id.ic_action_resume_call);
+        manageCallButton();
+
         return true;
     }
 
@@ -967,8 +997,22 @@ public class HomeActivity extends MXCActionBarActivity {
             toggleSearchButton();
         } else if (id == R.id.ic_action_mark_all_as_read) {
             markAllMessagesAsRead();
-        }
+        } else if (id == R.id.ic_action_resume_call) {
+            IMXCall call = CallViewActivity.getActiveCall();
+            if (null != call) {
+                final Intent intent = new Intent(HomeActivity.this, CallViewActivity.class);
+                intent.putExtra(CallViewActivity.EXTRA_MATRIX_ID, call.getSession().getCredentials().userId);
+                intent.putExtra(CallViewActivity.EXTRA_CALL_ID, call.getCallId());
 
+                HomeActivity.this.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        HomeActivity.this.startActivity(intent);
+                    }
+                });
+            }
+
+        }
         return super.onOptionsItemSelected(item);
     }
 

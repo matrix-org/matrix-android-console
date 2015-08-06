@@ -50,15 +50,16 @@ public class CallViewActivity extends FragmentActivity {
     private static CallViewActivity instance = null;
 
     private static View mSavedCallview = null;
+    private static IMXCall mCall = null;
+
     private View mCallView;
 
     // account info
     private String mMatrixId = null;
-    private String mCallId = null;
     private MXSession mSession = null;
+    private String mCallId = null;
 
     // call info
-    private IMXCall mCall = null;
     private RoomMember mOtherMember = null;
     private Boolean mIsAnsweredElsewhere = false;
 
@@ -126,6 +127,46 @@ public class CallViewActivity extends FragmentActivity {
         }
     };
 
+    /**
+     * @return true if the call can be resumed.
+     * i.e this callView can be closed to be re opened later.
+     */
+    private static Boolean canCallBeResumed() {
+        if (null != mCall) {
+            String state = mCall.getCallState();
+
+            // active call must be
+            return state.equals(IMXCall.CALL_STATE_CONNECTING) ||
+                    state.equals(IMXCall.CALL_STATE_CONNECTED) ||
+                    state.equals(IMXCall.CALL_STATE_CREATE_ANSWER);
+        }
+
+        return false;
+    }
+
+    /**
+     * @return the active call
+     */
+    public static IMXCall getActiveCall() {
+        IMXCall res = mCall;
+
+        // check if the call can be resume
+        if (!canCallBeResumed()) {
+            mCall = null;
+            mSavedCallview = null;
+        } else if (null != mCall) {
+            // check if the call is still known
+           if (mCall != mCall.getSession().mCallsManager.callWithCallId(mCall.getCallId())) {
+               res = null;
+           }
+        }
+
+        return res;
+    }
+
+    /**
+     * @return the callViewActivity instance
+     */
     public static CallViewActivity getInstance() {
         return instance;
     }
@@ -227,17 +268,21 @@ public class CallViewActivity extends FragmentActivity {
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         // assume that the user cancels the call if it is ringing
         if (keyCode == KeyEvent.KEYCODE_BACK) {
-            if ((null != mCall) && mCall.getCallState().equals(IMXCall.CALL_STATE_RINGING)) {
+            if (!canCallBeResumed()) {
                 mCall.hangup("");
+            } else {
+                saveCallView();
             }
         } else if ((keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) || (keyCode == KeyEvent.KEYCODE_VOLUME_UP)) {
-
             // this is a trick to reduce the ring volume :
             // when the call is ringing, the AudioManager.Mode switch to MODE_IN_COMMUNICATION
-            // so the volume is the next call one whereas the user expects to reduce the ring volme.
+            // so the volume is the next call one whereas the user expects to reduce the ring volume.
             if ((null != mCall) && mCall.getCallState().equals(IMXCall.CALL_STATE_RINGING)) {
                 AudioManager audioManager = (AudioManager) CallViewActivity.this.getSystemService(Context.AUDIO_SERVICE);
-                audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, audioManager.getStreamVolume(AudioManager.STREAM_VOICE_CALL), 0);
+                // IMXChrome call issue
+                if (audioManager.getMode() == AudioManager.MODE_IN_COMMUNICATION) {
+                    audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, audioManager.getStreamVolume(AudioManager.STREAM_VOICE_CALL), 0);
+                }
             }
         }
 
@@ -280,6 +325,14 @@ public class CallViewActivity extends FragmentActivity {
     }
 
     /**
+     * hangup the call.
+     */
+    private void onHangUp() {
+        mSavedCallview = null;
+        mCall.hangup("");
+    }
+
+    /**
      * Init the buttons layer
      */
     private void manageSubViews() {
@@ -304,27 +357,21 @@ public class CallViewActivity extends FragmentActivity {
             mRejectButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    mSavedCallview = null;
-                    mCall.hangup("");
-                    // some dedicated behaviour here ?
+                    onHangUp();
                 }
             });
 
             mCancelButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    mSavedCallview = null;
-                    mCall.hangup("");
-                    // some dedicated behaviour here ?
+                    onHangUp();
                 }
             });
 
             mStopButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    mSavedCallview = null;
-                    mCall.hangup("");
-                    // some dedicated behaviour here ?
+                    onHangUp();
                 }
             });
 
@@ -433,17 +480,20 @@ public class CallViewActivity extends FragmentActivity {
         }
     }
 
-    @Override
-    public void onSaveInstanceState(Bundle savedInstanceState) {
-        // Always call the superclass so it can save the view hierarchy state
-        super.onSaveInstanceState(savedInstanceState);
-
-        if ((null != mCall) && !mCall.getCallState().equals(IMXCall.CALL_STATE_ENDED) && (null != mCallView.getParent())) {
+    private void saveCallView() {
+        if ((null != mCall) && !mCall.getCallState().equals(IMXCall.CALL_STATE_ENDED) && (null != mCallView) && (null != mCallView.getParent())) {
             ViewGroup parent = (ViewGroup) mCallView.getParent();
             parent.removeView(mCallView);
             mSavedCallview = mCallView;
             mCallView = null;
         }
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle savedInstanceState) {
+        // Always call the superclass so it can save the view hierarchy state
+        super.onSaveInstanceState(savedInstanceState);
+        saveCallView();
     }
 
     @Override

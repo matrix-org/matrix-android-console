@@ -850,7 +850,7 @@ public class RoomActivity extends MXCActionBarActivity {
      * Refresh the calls buttons
      */
     private void updateCallMenuEntries() {
-        Boolean visible = mRoom.canPerformCall() && mSession.isVoipCallSupported();
+        Boolean visible = mRoom.canPerformCall() && mSession.isVoipCallSupported() && (null == CallViewActivity.getActiveCall());
 
         if (null != mVoiceMenuItem) {
             mVoiceMenuItem.setVisible(visible);

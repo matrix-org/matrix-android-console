@@ -60,6 +60,7 @@
     <string name="action_invite_by_list">Invite from other rooms</string>
     <string name="action_home">Home</string>
     <string name="action_drawer">Extras</string>
+    <string name="action_resume_call">Resume call</string>
 
     <string name="send_files_in">Send into</string>
     <string name="save_files_in">Save into</string>
