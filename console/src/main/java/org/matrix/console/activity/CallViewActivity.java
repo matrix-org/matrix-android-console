@@ -227,7 +227,7 @@ public class CallViewActivity extends FragmentActivity {
         // assume that the user cancels the call if it is ringing
         if ((keyCode == KeyEvent.KEYCODE_BACK)) {
             if ((null != mCall) && mCall.getCallState().equals(IMXCall.CALL_STATE_RINGING)) {
-                mCall.hangup();
+                mCall.hangup("");
             }
         }
 
@@ -295,7 +295,7 @@ public class CallViewActivity extends FragmentActivity {
                 @Override
                 public void onClick(View v) {
                     mSavedCallview = null;
-                    mCall.hangup();
+                    mCall.hangup("");
                     // some dedicated behaviour here ?
                 }
             });
@@ -304,7 +304,7 @@ public class CallViewActivity extends FragmentActivity {
                 @Override
                 public void onClick(View v) {
                     mSavedCallview = null;
-                    mCall.hangup();
+                    mCall.hangup("");
                     // some dedicated behaviour here ?
                 }
             });
@@ -313,7 +313,7 @@ public class CallViewActivity extends FragmentActivity {
                 @Override
                 public void onClick(View v) {
                     mSavedCallview = null;
-                    mCall.hangup();
+                    mCall.hangup("");
                     // some dedicated behaviour here ?
                 }
             });

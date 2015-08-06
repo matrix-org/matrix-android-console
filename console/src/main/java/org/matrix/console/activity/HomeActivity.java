@@ -741,7 +741,7 @@ public class HomeActivity extends MXCActionBarActivity {
              * Called when there is an incoming call within the room.
              */
             @Override
-            public void onIncomingCall(IMXCall call) {
+            public void onIncomingCall(final IMXCall call) {
                 // can only manage one call instance.
                 if (null == CallViewActivity.getInstance()) {
                     // create the call object
@@ -758,6 +758,13 @@ public class HomeActivity extends MXCActionBarActivity {
                             }
                         });
                     }
+                } else {
+                    HomeActivity.this.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            call.hangup("busy");
+                        }
+                    });
                 }
             }
         };
