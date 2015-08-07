@@ -45,7 +45,7 @@ public class NotificationUtils {
     static int mUnreadBubbleWidth = -1;
 
     public static Notification buildMessageNotification(
-            Context context, String from, String matrixId, Boolean displayMatrixId, Bitmap largeIcon, int globalUnseen, int memberUnseen, String body, String roomId, String roomName,
+            Context context, String from, String matrixId, String callId, Boolean displayMatrixId, Bitmap largeIcon, int globalUnseen, int memberUnseen, String body, String roomId, String roomName,
             boolean shouldPlaySound) {
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context);
         builder.setWhen(System.currentTimeMillis());
@@ -167,6 +167,10 @@ public class NotificationUtils {
             roomIntent.putExtra(RoomActivity.EXTRA_MATRIX_ID, matrixId);
         }
 
+        if (null != callId) {
+            roomIntent.putExtra(RoomActivity.EXTRA_START_CALL_ID, callId);
+        }
+
         // Recreate the back stack
         TaskStackBuilder stackBuilder = TaskStackBuilder.create(context)
                 .addParentStack(RoomActivity.class)
@@ -186,7 +190,7 @@ public class NotificationUtils {
         builder.setStyle(textStyle);
 
         // do not offer to quick respond if the user did not dismiss the previous one
-        if (!LockScreenActivity.isDisplayingALockScreenActivity()) {
+        if (!LockScreenActivity.isDisplayingALockScreenActivity() && (null == callId)) {
             // offer to type a quick answer (i.e. without launching the application)
             Intent quickReplyIntent = new Intent(context, LockScreenActivity.class);
             quickReplyIntent.putExtra(LockScreenActivity.EXTRA_ROOM_ID, roomId);

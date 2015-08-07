@@ -46,6 +46,7 @@ public class CallViewActivity extends FragmentActivity {
 
     public static final String EXTRA_MATRIX_ID = "org.matrix.console.activity.CallViewActivity.EXTRA_MATRIX_ID";
     public static final String EXTRA_CALL_ID = "org.matrix.console.activity.CallViewActivity.EXTRA_CALL_ID";
+    public static final String EXTRA_AUTO_ACCEPT = "org.matrix.console.activity.CallViewActivity.EXTRA_AUTO_ACCEPT";
 
     private static CallViewActivity instance = null;
 
@@ -62,6 +63,7 @@ public class CallViewActivity extends FragmentActivity {
     // call info
     private RoomMember mOtherMember = null;
     private Boolean mIsAnsweredElsewhere = false;
+    private Boolean mAutoAccept =false;
 
     // graphical items
     private View mAcceptRejectLayout;
@@ -152,16 +154,19 @@ public class CallViewActivity extends FragmentActivity {
      * @return the active call
      */
     public static IMXCall getActiveCall() {
-        // check if the call can be resume
-        if (!canCallBeResumed()) {
-            mCall = null;
-            mSavedCallview = null;
-        } else if (null != mCall) {
-            // check if the call is still known
-           if (null == mCall.getSession().mCallsManager.callWithCallId(mCall.getCallId())) {
-               mCall = null;
-               mSavedCallview = null;
-           }
+        // not currently displayed
+        if (instance == null) {
+            // check if the call can be resume
+            if (!canCallBeResumed()) {
+                mCall = null;
+                mSavedCallview = null;
+            } else if (null != mCall) {
+                // check if the call is still known
+                if (null == mCall.getSession().mCallsManager.callWithCallId(mCall.getCallId())) {
+                    mCall = null;
+                    mSavedCallview = null;
+                }
+            }
         }
 
         return mCall;
@@ -245,6 +250,8 @@ public class CallViewActivity extends FragmentActivity {
             return;
         }
 
+        mAutoAccept = intent.hasExtra(EXTRA_AUTO_ACCEPT);
+
         if (null == mRingingPLayer) {
             mRingingPLayer = MediaPlayer.create(this, R.raw.ring);
             mRingingPLayer.setLooping(true);
@@ -277,7 +284,7 @@ public class CallViewActivity extends FragmentActivity {
 
         mCall.addListener(mListener);
 
-        instance = null;
+        instance = this;
     }
 
     @Override
@@ -457,8 +464,8 @@ public class CallViewActivity extends FragmentActivity {
         if (callState.equals(IMXCall.CALL_STATE_CONNECTING) || callState.equals(IMXCall.CALL_STATE_CREATE_ANSWER)
                 || callState.equals(IMXCall.CALL_STATE_WAIT_LOCAL_MEDIA) || callState.equals(IMXCall.CALL_STATE_WAIT_CREATE_OFFER)
                 ) {
-            //mAcceptButton.setAlpha(0.5f);
-            //mAcceptButton.setEnabled(false);
+            mAcceptButton.setAlpha(0.5f);
+            mAcceptButton.setEnabled(false);
             mCallStateTextView.setText(getResources().getString(R.string.call_connecting));
             mCallStateTextView.setVisibility(View.VISIBLE);
             stopRinging();
@@ -493,6 +500,17 @@ public class CallViewActivity extends FragmentActivity {
                 mCallStateTextView.setText(getResources().getString(R.string.call_ring));
             }
             mCallStateTextView.setVisibility(View.VISIBLE);
+
+            if (mAutoAccept) {
+                mAutoAccept = false;
+
+                CallViewActivity.this.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        mCall.answer();
+                    }
+                });
+            }
         }
     }
 

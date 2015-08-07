@@ -185,6 +185,12 @@ public class EventStreamService extends Service {
                 if (!Event.EVENT_TYPE_STATE_ROOM_MEMBER.equals(event.type) && !event.isCallEvent()) {
                     return;
                 }
+
+                // display only the invitation messages by now
+                // because the other ones are not displayed.
+                if (event.isCallEvent() && !event.type.equals(Event.EVENT_TYPE_CALL_INVITE)) {
+                    return;
+                }
             }
 
             MXSession session = Matrix.getMXSession(getApplicationContext(), event.getMatrixId());
@@ -206,11 +212,17 @@ public class EventStreamService extends Service {
 
             Boolean isInvitationEvent = false;
             String body;
+            String callId = null;
 
             // call invitation
             if (event.isCallEvent()) {
                 if (event.type.equals(Event.EVENT_TYPE_CALL_INVITE)) {
                     body = getApplicationContext().getString(R.string.incoming_call);
+
+                    try {
+                        callId = event.content.get("call_id").getAsString();
+                     } catch (Exception e) {}
+
                 } else {
                     EventDisplay eventDisplay = new EventDisplay(getApplicationContext(), event, room.getLiveState());
                     body = eventDisplay.getTextualDisplay().toString();
@@ -285,6 +297,7 @@ public class EventStreamService extends Service {
             mLatestNotification = NotificationUtils.buildMessageNotification(
                     EventStreamService.this,
                     from, session.getCredentials().userId,
+                    callId,
                     Matrix.getMXSessions(getApplicationContext()).size() > 1,
                     largeBitmap,
                     mUnreadMessagesCounter,

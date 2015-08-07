@@ -104,6 +104,9 @@ public class RoomActivity extends MXCActionBarActivity {
 
     public static final String EXTRA_ROOM_ID = "org.matrix.console.RoomActivity.EXTRA_ROOM_ID";
 
+    // the room is launched but it expects to start the dedicated call activity
+    public static final String EXTRA_START_CALL_ID = "org.matrix.console.RoomActivity.EXTRA_START_CALL_ID";
+
     private static final String TAG_FRAGMENT_MATRIX_MESSAGE_LIST = "org.matrix.console.RoomActivity.TAG_FRAGMENT_MATRIX_MESSAGE_LIST";
     private static final String TAG_FRAGMENT_MEMBERS_DIALOG = "org.matrix.console.RoomActivity.TAG_FRAGMENT_MEMBERS_DIALOG";
     private static final String TAG_FRAGMENT_INVITATION_MEMBERS_DIALOG = "org.matrix.console.RoomActivity.TAG_FRAGMENT_INVITATION_MEMBERS_DIALOG";
@@ -166,6 +169,8 @@ public class RoomActivity extends MXCActionBarActivity {
 
     private MenuItem mVoiceMenuItem = null;
     private MenuItem mVideoMenuItem = null;
+
+    private String mCallId = null;
 
     private String mLatestTakePictureCameraUri; // has to be String not Uri because of Serializable
 
@@ -338,6 +343,10 @@ public class RoomActivity extends MXCActionBarActivity {
             Log.e(LOG_TAG, "No room ID extra.");
             finish();
             return;
+        }
+
+        if (intent.hasExtra(EXTRA_START_CALL_ID)) {
+            mCallId = intent.getStringExtra(EXTRA_START_CALL_ID);
         }
 
         // the user has tapped on the "View" notification button
@@ -843,6 +852,27 @@ public class RoomActivity extends MXCActionBarActivity {
                     mScrollToIndex = -1;
                 }
             });
+        }
+
+
+        if (null != mCallId) {
+            // can only manage one call instance.
+            if (null == CallViewActivity.getActiveCall()) {
+                final Intent intent = new Intent(RoomActivity.this, CallViewActivity.class);
+                intent.putExtra(CallViewActivity.EXTRA_MATRIX_ID, mSession.getCredentials().userId);
+                intent.putExtra(CallViewActivity.EXTRA_CALL_ID, mCallId);
+                intent.putExtra(CallViewActivity.EXTRA_AUTO_ACCEPT, "anything");
+
+                RoomActivity.this.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            RoomActivity.this.startActivity(intent);
+                        }
+                    });
+
+            }
+
+            mCallId = null;
         }
     }
 

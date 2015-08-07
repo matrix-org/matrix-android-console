@@ -54,6 +54,7 @@ import org.matrix.androidsdk.rest.model.RoomMember;
 import org.matrix.androidsdk.rest.model.login.Credentials;
 import org.matrix.androidsdk.util.EventUtils;
 import org.matrix.androidsdk.util.JsonUtils;
+import org.matrix.console.ConsoleApplication;
 import org.matrix.console.Matrix;
 import org.matrix.console.MyPresenceManager;
 import org.matrix.console.R;
@@ -746,19 +747,22 @@ public class HomeActivity extends MXCActionBarActivity {
             public void onIncomingCall(final IMXCall call) {
                 // can only manage one call instance.
                 if (null == CallViewActivity.getActiveCall()) {
-                    // create the call object
-                    if (null != call) {
-                        final Intent intent = new Intent(HomeActivity.this, CallViewActivity.class);
+                    // display the call activity only if the application is in background.
+                    if (!ConsoleApplication.isAppInBackground()) {
+                        // create the call object
+                        if (null != call) {
+                            final Intent intent = new Intent(HomeActivity.this, CallViewActivity.class);
 
-                        intent.putExtra(CallViewActivity.EXTRA_MATRIX_ID, session.getCredentials().userId);
-                        intent.putExtra(CallViewActivity.EXTRA_CALL_ID, call.getCallId());
+                            intent.putExtra(CallViewActivity.EXTRA_MATRIX_ID, session.getCredentials().userId);
+                            intent.putExtra(CallViewActivity.EXTRA_CALL_ID, call.getCallId());
 
-                        HomeActivity.this.runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                HomeActivity.this.startActivity(intent);
-                            }
-                        });
+                            HomeActivity.this.runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    HomeActivity.this.startActivity(intent);
+                                }
+                            });
+                        }
                     }
                 } else {
                     HomeActivity.this.runOnUiThread(new Runnable() {
