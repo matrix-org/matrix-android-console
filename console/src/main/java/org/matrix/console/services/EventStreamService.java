@@ -26,9 +26,11 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.IBinder;
 import android.os.PowerManager;
+import android.text.TextUtils;
 import android.util.Log;
 
 import org.matrix.androidsdk.MXSession;
+import org.matrix.androidsdk.call.IMXCall;
 import org.matrix.androidsdk.data.IMXStore;
 import org.matrix.androidsdk.data.Room;
 import org.matrix.androidsdk.data.RoomState;
@@ -45,6 +47,7 @@ import org.matrix.console.ViewedRoomTracker;
 import org.matrix.console.activity.CommonActivityUtils;
 import org.matrix.console.activity.HomeActivity;
 import org.matrix.console.util.NotificationUtils;
+import org.w3c.dom.Text;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -179,23 +182,9 @@ public class EventStreamService extends Service {
             // FIXME: Support event contents with no body
             if (!event.content.has("body")) {
                 // only the membership events are supported
-                if (!Event.EVENT_TYPE_STATE_ROOM_MEMBER.equals(event.type)) {
+                if (!Event.EVENT_TYPE_STATE_ROOM_MEMBER.equals(event.type) && !event.isCallEvent()) {
                     return;
                 }
-            }
-
-            Boolean isInvitationEvent = false;
-            String body;
-
-            if (Event.EVENT_TYPE_STATE_ROOM_MEMBER.equals(event.type)) {
-                body = EventDisplay.getMembershipNotice(getApplicationContext(), event, roomState);
-
-                try {
-                    isInvitationEvent = "invite".equals(event.content.getAsJsonPrimitive("membership").getAsString());
-                } catch (Exception e) {}
-
-            } else {
-                body = event.content.getAsJsonPrimitive("body").getAsString();
             }
 
             MXSession session = Matrix.getMXSession(getApplicationContext(), event.getMatrixId());
@@ -213,6 +202,28 @@ public class EventStreamService extends Service {
             // invalid room ?
             if (null == room) {
                 return;
+            }
+
+            Boolean isInvitationEvent = false;
+            String body;
+
+            // call invitation
+            if (event.isCallEvent()) {
+                if (event.type.equals(Event.EVENT_TYPE_CALL_INVITE)) {
+                    body = getApplicationContext().getString(R.string.incoming_call);
+                } else {
+                    EventDisplay eventDisplay = new EventDisplay(getApplicationContext(), event, room.getLiveState());
+                    body = eventDisplay.getTextualDisplay().toString();
+                }
+            } else if (Event.EVENT_TYPE_STATE_ROOM_MEMBER.equals(event.type)) {
+                body = EventDisplay.getMembershipNotice(getApplicationContext(), event, roomState);
+
+                try {
+                    isInvitationEvent = "invite".equals(event.content.getAsJsonPrimitive("membership").getAsString());
+                } catch (Exception e) {}
+
+            } else {
+                body = event.content.getAsJsonPrimitive("body").getAsString();
             }
 
             int unreadNotifForThisUser = 0;
