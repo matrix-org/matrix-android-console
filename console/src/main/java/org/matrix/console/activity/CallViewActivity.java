@@ -489,7 +489,6 @@ public class CallViewActivity extends FragmentActivity {
             mCallStateTextView.setText(getResources().getString(R.string.call_ended));
             mCallStateTextView.setVisibility(View.VISIBLE);
         } else if (callState.equals(IMXCall.CALL_STATE_RINGING)) {
-            startRinging();
             if (mCall.isIncoming()) {
                 if (mCall.isVideo()) {
                     mCallStateTextView.setText(getResources().getString(R.string.incoming_video_call));
@@ -503,13 +502,19 @@ public class CallViewActivity extends FragmentActivity {
 
             if (mAutoAccept) {
                 mAutoAccept = false;
-
-                CallViewActivity.this.runOnUiThread(new Runnable() {
+                mAcceptButton.setAlpha(0.5f);
+                mAcceptButton.setEnabled(false);
+                mCallStateTextView.postDelayed(new Runnable() {
                     @Override
                     public void run() {
                         mCall.answer();
                     }
-                });
+                }, 100);
+            } else {
+                mAcceptButton.setAlpha(1.0f);
+                mAcceptButton.setEnabled(true);
+
+                startRinging();
             }
         }
     }
