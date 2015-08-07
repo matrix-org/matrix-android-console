@@ -118,11 +118,13 @@ public class CallViewActivity extends FragmentActivity {
         @Override
         public void onCallAnsweredElsewhere() {
             mIsAnsweredElsewhere = true;
+            clearCallData();
             CallViewActivity.this.finish();
         }
 
         @Override
         public void onCallEnd() {
+            clearCallData();
             CallViewActivity.this.finish();
         }
     };
@@ -136,7 +138,9 @@ public class CallViewActivity extends FragmentActivity {
             String state = mCall.getCallState();
 
             // active call must be
-            return state.equals(IMXCall.CALL_STATE_CONNECTING) ||
+            return
+                    (state.equals(IMXCall.CALL_STATE_RINGING) && !mCall.isIncoming()) ||
+                    state.equals(IMXCall.CALL_STATE_CONNECTING) ||
                     state.equals(IMXCall.CALL_STATE_CONNECTED) ||
                     state.equals(IMXCall.CALL_STATE_CREATE_ANSWER);
         }
@@ -148,20 +152,19 @@ public class CallViewActivity extends FragmentActivity {
      * @return the active call
      */
     public static IMXCall getActiveCall() {
-        IMXCall res = mCall;
-
         // check if the call can be resume
         if (!canCallBeResumed()) {
             mCall = null;
             mSavedCallview = null;
         } else if (null != mCall) {
             // check if the call is still known
-           if (mCall != mCall.getSession().mCallsManager.callWithCallId(mCall.getCallId())) {
-               res = null;
+           if (null == mCall.getSession().mCallsManager.callWithCallId(mCall.getCallId())) {
+               mCall = null;
+               mSavedCallview = null;
            }
         }
 
-        return res;
+        return mCall;
     }
 
     /**
@@ -169,6 +172,19 @@ public class CallViewActivity extends FragmentActivity {
      */
     public static CallViewActivity getInstance() {
         return instance;
+    }
+
+    /**
+     * release the call info
+     */
+    private void clearCallData() {
+        if (null != mCall) {
+            mCall.removeListener(mListener);
+        }
+
+        mCall = null;
+        mCallView = null;
+        mSavedCallview = null;
     }
 
     /**
