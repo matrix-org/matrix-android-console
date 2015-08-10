@@ -32,6 +32,7 @@ import com.google.android.gms.analytics.GoogleAnalytics;
 import com.google.android.gms.analytics.HitBuilders;
 import com.google.android.gms.analytics.Tracker;
 
+import org.matrix.console.activity.CallViewActivity;
 import org.matrix.console.activity.CommonActivityUtils;
 import org.matrix.console.contacts.ContactsManager;
 import org.matrix.console.contacts.PIDsRetriever;
@@ -59,6 +60,8 @@ public class ConsoleApplication extends Application {
     private static GoogleAnalytics sGoogleAnalytics;
     private int VERSION_BUILD = -1;
     private String VERSION_STRING = "";
+
+    private Boolean mIsCallingInBackground = false;
 
     private static ConsoleApplication instance = null;
 
@@ -96,6 +99,29 @@ public class ConsoleApplication extends Application {
         return instance;
     }
 
+    /**
+     * Suspend background threads.
+     */
+    private void suspendApp() {
+        // suspend the events thread if the client uses GCM
+        if (Matrix.getInstance(ConsoleApplication.this).getSharedGcmRegistrationManager().useGCM()) {
+            CommonActivityUtils.pauseEventStream(ConsoleApplication.this);
+        }
+        PIDsRetriever.getIntance().onAppBackgrounded();
+
+        MyPresenceManager.advertiseAllUnavailable();
+    }
+
+    /**
+     * The application is warned that a call is ended.
+     */
+    public void onCallEnd() {
+        if (isInBackground && mIsCallingInBackground) {
+            mIsCallingInBackground = false;
+            suspendApp();
+        }
+    }
+
     public void startActivityTransitionTimer() {
 
         // reset the application badge when displaying a new activity
@@ -106,14 +132,13 @@ public class ConsoleApplication extends Application {
         this.mActivityTransitionTimerTask = new TimerTask() {
             public void run() {
                 ConsoleApplication.this.isInBackground = true;
+                mIsCallingInBackground = (null != CallViewActivity.getActiveCall());
 
-                // suspend the events thread if the client uses GCM
-                if (Matrix.getInstance(ConsoleApplication.this).getSharedGcmRegistrationManager().useGCM()) {
-                    CommonActivityUtils.pauseEventStream(ConsoleApplication.this);
+                // if there is a pending call
+                // the application is not suspended
+                if (!mIsCallingInBackground) {
+                    suspendApp();
                 }
-                PIDsRetriever.getIntance().onAppBackgrounded();
-
-                MyPresenceManager.advertiseAllUnavailable();
             }
         };
 
@@ -129,7 +154,7 @@ public class ConsoleApplication extends Application {
             this.mActivityTransitionTimer.cancel();
         }
 
-        if (isInBackground) {
+        if (isInBackground && !mIsCallingInBackground) {
             // resume the events thread if the client uses GCM
             if (Matrix.getInstance(ConsoleApplication.this).getSharedGcmRegistrationManager().useGCM()) {
 

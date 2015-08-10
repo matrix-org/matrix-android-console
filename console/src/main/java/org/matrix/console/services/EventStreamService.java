@@ -26,11 +26,9 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.IBinder;
 import android.os.PowerManager;
-import android.text.TextUtils;
 import android.util.Log;
 
 import org.matrix.androidsdk.MXSession;
-import org.matrix.androidsdk.call.IMXCall;
 import org.matrix.androidsdk.data.IMXStore;
 import org.matrix.androidsdk.data.Room;
 import org.matrix.androidsdk.data.RoomState;
@@ -47,15 +45,12 @@ import org.matrix.console.ViewedRoomTracker;
 import org.matrix.console.activity.CommonActivityUtils;
 import org.matrix.console.activity.HomeActivity;
 import org.matrix.console.util.NotificationUtils;
-import org.w3c.dom.Text;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-
-import javax.crypto.AEADBadTagException;
 
 /**
  * A foreground service in charge of controlling whether the event stream is running or not.
@@ -77,12 +72,16 @@ public class EventStreamService extends Service {
     private static final String LOG_TAG = "EventStreamService";
     private static final int NOTIFICATION_ID = 42;
     private static final int MSG_NOTIFICATION_ID = 43;
+    private static final int PENDING_CALL_ID = 44;
 
     private ArrayList<MXSession> mSessions;
     private ArrayList<String> mMatrixIds;
     private StreamAction mState = StreamAction.UNKNOWN;
 
     private String mNotificationRoomId = null;
+
+    // in progress call
+    private String mCallId = null;
 
     private Boolean mIsForegound = false;
     private int mUnreadMessagesCounter = 0;
@@ -438,7 +437,7 @@ public class EventStreamService extends Service {
     }
 
     private void start() {
-        // reset the badbge counter when resuming the application
+        // reset the badge counter when resuming the application
         if (0 != mUnreadMessagesCounter) {
             mUnreadMessagesCounter = 0;
             CommonActivityUtils.updateUnreadMessagesBadge(this, mUnreadMessagesCounter);
@@ -560,7 +559,7 @@ public class EventStreamService extends Service {
         if (!Matrix.getInstance(this).getSharedGcmRegistrationManager().useGCM()) {
             Notification notification = buildNotification();
             startForeground(NOTIFICATION_ID, notification);
-            mIsForegound = true;
+            mIsForegound = false;
         } else {
             NotificationManager nm = (NotificationManager) EventStreamService.this.getSystemService(Context.NOTIFICATION_SERVICE);
             nm.cancel(NOTIFICATION_ID);
@@ -588,5 +587,32 @@ public class EventStreamService extends Service {
                 pi);
         notification.flags |= Notification.FLAG_NO_CLEAR;
         return notification;
+    }
+
+
+    /**
+     * A call is in progress.
+     * @param session the session
+     * @param callId the callId
+     */
+    public void displayPendingCallNotification(MXSession session, Room room, String callId) {
+        if (null != callId) {
+            Notification notification = NotificationUtils.buildCallNotification(getApplicationContext(), room.getName(session.getCredentials().userId), room.getRoomId(), session.getCredentials().userId, callId);
+            startForeground(PENDING_CALL_ID, notification);
+            mCallId = callId;
+        }
+    }
+
+    /**
+     * @param callId the ended call call id
+     */
+    public void hidePendingCallNotification(String callId) {
+        if ((null != callId) && (null != mCallId)) {
+            if (mCallId.equals(callId)) {
+                stopForeground(true);
+                updateListenerNotification();
+                mCallId = null;
+            }
+        }
     }
 }

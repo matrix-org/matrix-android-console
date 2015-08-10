@@ -65,6 +65,7 @@ import org.matrix.console.fragments.AccountsSelectionDialogFragment;
 import org.matrix.console.fragments.ContactsListDialogFragment;
 import org.matrix.console.fragments.RoomCreationDialogFragment;
 import org.matrix.console.gcm.GcmRegistrationManager;
+import org.matrix.console.services.EventStreamService;
 import org.matrix.console.util.RageShake;
 
 import java.io.Serializable;
@@ -528,6 +529,8 @@ public class HomeActivity extends MXCActionBarActivity {
      * @param session the sessions.
      */
     private void addSessionListener(final MXSession session) {
+        removeSessionListener(session);
+
         MXEventListener listener = new MXEventListener() {
             private boolean mInitialSyncComplete = false;
 
@@ -748,7 +751,7 @@ public class HomeActivity extends MXCActionBarActivity {
                 // can only manage one call instance.
                 if (null == CallViewActivity.getActiveCall()) {
                     // display the call activity only if the application is in background.
-                    if (!ConsoleApplication.isAppInBackground()) {
+                    /*if (!ConsoleApplication.isAppInBackground())*/ {
                         // create the call object
                         if (null != call) {
                             final Intent intent = new Intent(HomeActivity.this, CallViewActivity.class);
@@ -782,6 +785,7 @@ public class HomeActivity extends MXCActionBarActivity {
                 HomeActivity.this.runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
+                        ConsoleApplication.getInstance().onCallEnd();
                         HomeActivity.this.manageCallButton();
                     }
                 });

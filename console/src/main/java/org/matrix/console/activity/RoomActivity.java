@@ -856,12 +856,18 @@ public class RoomActivity extends MXCActionBarActivity {
 
 
         if (null != mCallId) {
+            IMXCall call = CallViewActivity.getActiveCall();
+
             // can only manage one call instance.
-            if (null == CallViewActivity.getActiveCall()) {
+            // either there is no active call or resume the active one
+            if ((null == call) || call.getCallId().equals(mCallId)) {
                 final Intent intent = new Intent(RoomActivity.this, CallViewActivity.class);
                 intent.putExtra(CallViewActivity.EXTRA_MATRIX_ID, mSession.getCredentials().userId);
                 intent.putExtra(CallViewActivity.EXTRA_CALL_ID, mCallId);
-                intent.putExtra(CallViewActivity.EXTRA_AUTO_ACCEPT, "anything");
+
+                if (null == call) {
+                    intent.putExtra(CallViewActivity.EXTRA_AUTO_ACCEPT, "anything");
+                }
 
                 RoomActivity.this.runOnUiThread(new Runnable() {
                         @Override

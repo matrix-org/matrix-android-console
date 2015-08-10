@@ -40,6 +40,7 @@ import org.matrix.androidsdk.rest.model.RoomMember;
 import org.matrix.console.ConsoleApplication;
 import org.matrix.console.Matrix;
 import org.matrix.console.R;
+import org.matrix.console.services.EventStreamService;
 
 public class CallViewActivity extends FragmentActivity {
     private static final String LOG_TAG = "CallViewActivity";
@@ -155,17 +156,13 @@ public class CallViewActivity extends FragmentActivity {
      */
     public static IMXCall getActiveCall() {
         // not currently displayed
-        if (instance == null) {
+        if ((instance == null) && (null != mCall)) {
             // check if the call can be resume
-            if (!canCallBeResumed()) {
+            // or it's still valid
+            if (!canCallBeResumed() || (null == mCall.getSession().mCallsManager.callWithCallId(mCall.getCallId()))) {
+                EventStreamService.getInstance().hidePendingCallNotification(mCall.getCallId());
                 mCall = null;
                 mSavedCallview = null;
-            } else if (null != mCall) {
-                // check if the call is still known
-                if (null == mCall.getSession().mCallsManager.callWithCallId(mCall.getCallId())) {
-                    mCall = null;
-                    mSavedCallview = null;
-                }
             }
         }
 
@@ -276,6 +273,7 @@ public class CallViewActivity extends FragmentActivity {
             insertCallView(mOtherMember.avatarUrl);
             manageSubViews();
         } else {
+            EventStreamService.getInstance().hidePendingCallNotification(mCall.getCallId());
             mSavedCallview = null;
             // init the call button
             manageSubViews();
@@ -524,6 +522,8 @@ public class CallViewActivity extends FragmentActivity {
             ViewGroup parent = (ViewGroup) mCallView.getParent();
             parent.removeView(mCallView);
             mSavedCallview = mCallView;
+
+            EventStreamService.getInstance().displayPendingCallNotification(mSession, mCall.getRoom(), mCall.getCallId());
             mCallView = null;
         }
     }
@@ -533,6 +533,13 @@ public class CallViewActivity extends FragmentActivity {
         // Always call the superclass so it can save the view hierarchy state
         super.onSaveInstanceState(savedInstanceState);
         saveCallView();
+        instance = null;
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        instance = this;
     }
 
     @Override

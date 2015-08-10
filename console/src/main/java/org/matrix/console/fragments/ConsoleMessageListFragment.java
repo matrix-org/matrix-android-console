@@ -121,16 +121,20 @@ public class ConsoleMessageListFragment extends MatrixMessageListFragment implem
      */
     @Override
     public void displayLoadingProgress() {
-        getActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                final View progressView = getActivity().findViewById(R.id.loading_room_content_progress);
+        if (null != getActivity()) {
+            getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (null != getActivity()) {
+                        final View progressView = getActivity().findViewById(R.id.loading_room_content_progress);
 
-                if (null != progressView) {
-                    progressView.setVisibility(View.VISIBLE);
+                        if (null != progressView) {
+                            progressView.setVisibility(View.VISIBLE);
+                        }
+                    }
                 }
-            }
-        });
+            });
+        }
     }
 
     /**
@@ -138,16 +142,20 @@ public class ConsoleMessageListFragment extends MatrixMessageListFragment implem
      */
     @Override
     public void dismissLoadingProgress() {
-        getActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                final View progressView = getActivity().findViewById(R.id.loading_room_content_progress);
+        if (null != getActivity()) {
+            getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (null != getActivity()) {
+                        final View progressView = getActivity().findViewById(R.id.loading_room_content_progress);
 
-                if (null != progressView) {
-                    progressView.setVisibility(View.GONE);
+                        if (null != progressView) {
+                            progressView.setVisibility(View.GONE);
+                        }
+                    }
                 }
-            }
-        });
+            });
+        }
     }
 
     /**
