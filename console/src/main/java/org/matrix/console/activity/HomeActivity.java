@@ -782,11 +782,17 @@ public class HomeActivity extends MXCActionBarActivity {
              */
             @Override
             public void onCallHangUp(IMXCall call) {
+                final Boolean isActiveCall = CallViewActivity.isBackgroundedCallId(call.getCallId());
+
                 HomeActivity.this.runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
                         ConsoleApplication.getInstance().onCallEnd();
                         HomeActivity.this.manageCallButton();
+
+                        if (isActiveCall) {
+                            CallViewActivity.startEndCallSound(HomeActivity.this);
+                        }
                     }
                 });
             }
