@@ -16,6 +16,7 @@
 
 package org.matrix.console.activity;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
@@ -216,6 +217,8 @@ public class CallViewActivity extends FragmentActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_callview);
 
+        instance = this;
+
         final Intent intent = getIntent();
         if (intent == null) {
             Log.e(LOG_TAG, "Need an intent to view.");
@@ -281,8 +284,6 @@ public class CallViewActivity extends FragmentActivity {
         }
 
         mCall.addListener(mListener);
-
-        instance = this;
     }
 
     @Override
@@ -302,7 +303,8 @@ public class CallViewActivity extends FragmentActivity {
                 AudioManager audioManager = (AudioManager) CallViewActivity.this.getSystemService(Context.AUDIO_SERVICE);
                 // IMXChrome call issue
                 if (audioManager.getMode() == AudioManager.MODE_IN_COMMUNICATION) {
-                    audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, audioManager.getStreamVolume(AudioManager.STREAM_VOICE_CALL), 0);
+                    int musicVol = audioManager.getStreamVolume(AudioManager.STREAM_VOICE_CALL) * audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC) / audioManager.getStreamMaxVolume(AudioManager.STREAM_VOICE_CALL);
+                    audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, musicVol, 0);
                 }
             }
         }
@@ -483,7 +485,7 @@ public class CallViewActivity extends FragmentActivity {
             mCallStateTextView.setText(getResources().getString(R.string.call_connected));
             mCallStateTextView.setVisibility(mCall.isVideo() ? View.GONE : View.VISIBLE);
         } else if (callState.equals(IMXCall.CALL_STATE_ENDED)) {
-            startEndCallSound();
+            startEndCallSound(CallViewActivity.this);
             mCallStateTextView.setText(getResources().getString(R.string.call_ended));
             mCallStateTextView.setVisibility(View.VISIBLE);
         } else if (callState.equals(IMXCall.CALL_STATE_RINGING)) {
@@ -512,7 +514,7 @@ public class CallViewActivity extends FragmentActivity {
                 mAcceptButton.setAlpha(1.0f);
                 mAcceptButton.setEnabled(true);
 
-                startRinging();
+                startRinging(CallViewActivity.this);
             }
         }
     }
@@ -584,10 +586,14 @@ public class CallViewActivity extends FragmentActivity {
 
         mCallVolume = audioManager.getStreamVolume(AudioManager.STREAM_VOICE_CALL);
 
-        int maxVol = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
-        if(maxVol > 0) {
-            int volume = (int) ((float) percent / 100f * maxVol);
+        int maxMusicVol = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+        int maxVoiceVol = audioManager.getStreamMaxVolume(AudioManager.STREAM_VOICE_CALL);
+
+        if(maxMusicVol > 0) {
+            int volume = (int) ((float) percent / 100f * maxMusicVol);
             audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, volume, 0);
+
+            volume = (int) ((float) percent / 100f * maxVoiceVol);
             audioManager.setStreamVolume(AudioManager.STREAM_VOICE_CALL, volume, 0);
         }
         Log.i(LOG_TAG, "Set media volume (ringback) to: " + audioManager.getStreamVolume(AudioManager.STREAM_MUSIC));
@@ -602,10 +608,20 @@ public class CallViewActivity extends FragmentActivity {
         }
         return false;
     }
+
+    private static void setSpeaker(Context context, Boolean speakerOn) {
+        AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+
+        // ignore speaker button if a bluetooth headset is connected
+        if (!audioManager.isBluetoothA2dpOn()) {
+            audioManager.setSpeakerphoneOn(speakerOn);
+        }
+    }
+
     /**
      * Start the ringing sound
      */
-    private static void startRinging() {
+    private static void startRinging(Activity activity) {
         if (null != mRingingPLayer) {
             // check if it is not yet playing
             if (!mRingingPLayer.isPlaying()) {
@@ -613,6 +629,8 @@ public class CallViewActivity extends FragmentActivity {
                 if ((null != mCallEndPlayer) && mCallEndPlayer.isPlaying()) {
                     mCallEndPlayer.stop();
                 }
+
+                setSpeaker(activity, true);
                 mRingingPLayer.start();
             }
         }
@@ -631,9 +649,10 @@ public class CallViewActivity extends FragmentActivity {
     /**
      * Start the end call sound
      */
-    private static void startEndCallSound() {
+    private static void startEndCallSound(Activity activity) {
         // sanity checks
         if ((null != mCallEndPlayer) && !mCallEndPlayer.isPlaying()) {
+            setSpeaker(activity, true);
             mCallEndPlayer.start();
         }
         stopRinging();
