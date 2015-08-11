@@ -33,6 +33,7 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import org.matrix.androidsdk.MXSession;
 import org.matrix.androidsdk.call.IMXCall;
@@ -95,9 +96,36 @@ public class CallViewActivity extends FragmentActivity {
             });
         }
 
+        /**
+         * Display the error messages
+         * @param toast the message
+         */
+        private void showToast(final String toast)  {
+            if (null != getInstance()) {
+                getInstance().runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (null != getInstance()) {
+                            Toast.makeText(getInstance(), toast, Toast.LENGTH_LONG).show();
+                        }
+                    }
+                });
+            }
+        }
+
         @Override
         public void onCallError(String error) {
-            // display error message here
+            Context context = getInstance();
+
+            if (null != context) {
+                if (IMXCall.CALL_ERROR_USER_NOT_RESPONDING.equals(error)) {
+                    showToast(context.getString(R.string.call_error_user_not_responding));
+                } else if (IMXCall.CALL_ERROR_ICE_FAILED.equals(error)) {
+                    showToast(context.getString(R.string.call_error_ice_failed));
+                } else if (IMXCall.CALL_ERROR_CAMERA_INIT_FAILED.equals(error)) {
+                    showToast(context.getString(R.string.call_error_camera_init_failed));
+                }
+            }
         }
 
         @Override
