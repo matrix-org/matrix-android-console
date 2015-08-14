@@ -37,6 +37,7 @@ import android.widget.Toast;
 
 import org.matrix.androidsdk.MXSession;
 import org.matrix.androidsdk.call.IMXCall;
+import org.matrix.androidsdk.call.MXCallsManager;
 import org.matrix.androidsdk.rest.model.RoomMember;
 import org.matrix.console.ConsoleApplication;
 import org.matrix.console.Matrix;
@@ -131,7 +132,7 @@ public class CallViewActivity extends FragmentActivity {
         @Override
         public void onViewLoading(View callview) {
             mCallView = callview;
-            mCallView.setBackgroundColor(Color.TRANSPARENT);
+            //mCallView.setBackgroundColor(Color.TRANSPARENT);
             insertCallView(mOtherMember.avatarUrl);
         }
 
@@ -260,7 +261,7 @@ public class CallViewActivity extends FragmentActivity {
         params.addRule(RelativeLayout.ALIGN_PARENT_TOP, RelativeLayout.TRUE);
         layout.addView(mCallView, 1, params);
 
-        mCallView.setVisibility(View.GONE);
+        mCall.setVisibility(View.GONE);
     }
 
     @Override
@@ -391,6 +392,8 @@ public class CallViewActivity extends FragmentActivity {
             } else {
                 mSpeakerSelectionView.setImageResource(R.drawable.ic_material_volume);
             }
+            CallViewActivity.this.setVolumeControlStream(audioManager.getMode());
+
         } else {
             mSpeakerSelectionView.setVisibility(View.GONE);
         }
@@ -408,6 +411,12 @@ public class CallViewActivity extends FragmentActivity {
      * Init the buttons layer
      */
     private void manageSubViews() {
+        // sanity check
+        // the call could have been destroyed between call.
+        if (null == mCall) {
+            return;
+        }
+
         // initialize buttons
         if (null == mAcceptRejectLayout) {
             mAcceptRejectLayout = findViewById(R.id.layout_accept_reject);
@@ -450,12 +459,8 @@ public class CallViewActivity extends FragmentActivity {
             mSpeakerSelectionView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    AudioManager audioManager = (AudioManager)CallViewActivity.this.getSystemService(Context.AUDIO_SERVICE);
-
-                    // ignore speaker button if a bluetooth headset is connected
-                    if (!audioManager.isBluetoothA2dpOn())
-                    {
-                        audioManager.setSpeakerphoneOn(!audioManager.isSpeakerphoneOn());
+                    if (null != mCall) {
+                        mCall.toggleSpeaker();
                         refreshSpeakerButton();
                     }
                 }
@@ -504,8 +509,8 @@ public class CallViewActivity extends FragmentActivity {
                 visibility = View.GONE;
             }
 
-            if ((null != mCallView) && (visibility != mCallView.getVisibility())) {
-                mCallView.setVisibility(visibility);
+            if ((null != mCall) && (visibility != mCall.getVisibility())) {
+                mCall.setVisibility(visibility);
             }
         }
 
@@ -526,7 +531,7 @@ public class CallViewActivity extends FragmentActivity {
                 public void run() {
                     AudioManager audioManager = (AudioManager) CallViewActivity.this.getSystemService(Context.AUDIO_SERVICE);
                     audioManager.setStreamVolume(AudioManager.STREAM_VOICE_CALL, mCallVolume, 0);
-                    audioManager.setSpeakerphoneOn(mCall.isVideo());
+                    MXCallsManager.setSpeakerphoneOn(CallViewActivity.this, mCall.isVideo());
                     refreshSpeakerButton();
                 }
             });
@@ -662,15 +667,6 @@ public class CallViewActivity extends FragmentActivity {
         return false;
     }
 
-    private static void setSpeaker(Context context, Boolean speakerOn) {
-        AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
-
-        // ignore speaker button if a bluetooth headset is connected
-        if (!audioManager.isBluetoothA2dpOn() && !audioManager.isWiredHeadsetOn()) {
-            audioManager.setSpeakerphoneOn(speakerOn);
-        }
-    }
-
     /**
      * Start the ringing sound
      */
@@ -688,8 +684,7 @@ public class CallViewActivity extends FragmentActivity {
                 if ((null != mCallEndPlayer) && mCallEndPlayer.isPlaying()) {
                     mCallEndPlayer.stop();
                 }
-
-                setSpeaker(context, true);
+                MXCallsManager.setSpeakerphoneOn(context, true);
                 mRingingPLayer.start();
             }
         }
@@ -717,7 +712,7 @@ public class CallViewActivity extends FragmentActivity {
 
         // sanity checks
         if ((null != mCallEndPlayer) && !mCallEndPlayer.isPlaying()) {
-            setSpeaker(context, true);
+            MXCallsManager.setSpeakerphoneOn(context, true);
             mCallEndPlayer.start();
         }
         stopRinging();
