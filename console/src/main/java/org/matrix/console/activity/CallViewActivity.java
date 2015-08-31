@@ -18,7 +18,6 @@ package org.matrix.console.activity;
 
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Color;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.Bundle;
@@ -361,6 +360,7 @@ public class CallViewActivity extends FragmentActivity {
         super.onPause();
 
         if (null != mCall) {
+            mCall.onPause();
             mCall.removeListener(mListener);
         }
         ConsoleApplication.setCurrentActivity(null);
@@ -370,6 +370,11 @@ public class CallViewActivity extends FragmentActivity {
     @Override
     protected void onResume() {
         super.onResume();
+
+        if (null != mCall) {
+            mCall.onResume();
+        }
+
         if ((null != mListener) && (null != mCall)) {
             mCall.addListener(mListener);
         }
@@ -405,6 +410,20 @@ public class CallViewActivity extends FragmentActivity {
     private void onHangUp() {
         mSavedCallview = null;
         mCall.hangup("");
+    }
+
+    /**
+     * Update the text value
+     * @param stateText
+     */
+    private void updateStateTextView(String stateText, boolean displayState) {
+        String text = mOtherMember.getName();
+
+        if (!TextUtils.isEmpty(stateText) && displayState) {
+            text += " (" + stateText + ")";
+        }
+
+        mCallStateTextView.setText(text);
     }
 
     /**
@@ -466,7 +485,7 @@ public class CallViewActivity extends FragmentActivity {
                 }
             });
 
-            mCallStateTextView.setText("");
+            updateStateTextView("", false);
         }
 
         String callState = mCall.getCallState();
@@ -520,7 +539,7 @@ public class CallViewActivity extends FragmentActivity {
                 ) {
             mAcceptButton.setAlpha(0.5f);
             mAcceptButton.setEnabled(false);
-            mCallStateTextView.setText(getResources().getString(R.string.call_connecting));
+            updateStateTextView(getResources().getString(R.string.call_connecting), true);
             mCallStateTextView.setVisibility(View.VISIBLE);
             stopRinging();
         } else if (callState.equals(IMXCall.CALL_STATE_CONNECTED)) {
@@ -536,20 +555,20 @@ public class CallViewActivity extends FragmentActivity {
                 }
             });
 
-            mCallStateTextView.setText(getResources().getString(R.string.call_connected));
+            updateStateTextView(getResources().getString(R.string.call_connected), false);
             mCallStateTextView.setVisibility(mCall.isVideo() ? View.GONE : View.VISIBLE);
         } else if (callState.equals(IMXCall.CALL_STATE_ENDED)) {
-            mCallStateTextView.setText(getResources().getString(R.string.call_ended));
+            updateStateTextView(getResources().getString(R.string.call_ended), true);
             mCallStateTextView.setVisibility(View.VISIBLE);
         } else if (callState.equals(IMXCall.CALL_STATE_RINGING)) {
             if (mCall.isIncoming()) {
                 if (mCall.isVideo()) {
-                    mCallStateTextView.setText(getResources().getString(R.string.incoming_video_call));
+                    updateStateTextView(getResources().getString(R.string.incoming_video_call), true);
                 } else {
-                    mCallStateTextView.setText(getResources().getString(R.string.incoming_voice_call));
+                    updateStateTextView(getResources().getString(R.string.incoming_voice_call), true);
                 }
             } else {
-                mCallStateTextView.setText(getResources().getString(R.string.call_ring));
+                updateStateTextView(getResources().getString(R.string.call_ring), true);
             }
             mCallStateTextView.setVisibility(View.VISIBLE);
 
