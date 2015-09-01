@@ -131,7 +131,6 @@ public class CallViewActivity extends FragmentActivity {
         @Override
         public void onViewLoading(View callview) {
             mCallView = callview;
-            //mCallView.setBackgroundColor(Color.TRANSPARENT);
             insertCallView(mOtherMember.avatarUrl);
         }
 
@@ -319,7 +318,14 @@ public class CallViewActivity extends FragmentActivity {
             mSavedCallview = null;
             // init the call button
             manageSubViews();
-            mCall.createCallView();
+
+            // create the callview asap
+            this.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    mCall.createCallView();
+                }
+            });
         }
     }
 
@@ -373,13 +379,11 @@ public class CallViewActivity extends FragmentActivity {
 
         if (null != mCall) {
             mCall.onResume();
-        }
 
-        if ((null != mListener) && (null != mCall)) {
-            mCall.addListener(mListener);
-        }
-
-        if (null == mCall) {
+            if (null != mListener) {
+                mCall.addListener(mListener);
+            }
+        } else {
             this.finish();
         }
 

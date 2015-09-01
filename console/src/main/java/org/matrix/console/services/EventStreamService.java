@@ -26,6 +26,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.IBinder;
 import android.os.PowerManager;
+import android.text.TextUtils;
 import android.util.Log;
 
 import org.matrix.androidsdk.MXSession;
@@ -80,8 +81,13 @@ public class EventStreamService extends Service {
 
     private String mNotificationRoomId = null;
 
-    // in progress call
+    // call in progress
+    // foreground notification
     private String mCallId = null;
+
+    // current displayed notification
+    // use to hide the "incoming call" notification
+    private String mNotifiedCallId = null;
 
     private Boolean mIsForegound = false;
     private int mUnreadMessagesCounter = 0;
@@ -188,6 +194,26 @@ public class EventStreamService extends Service {
                 // display only the invitation messages by now
                 // because the other ones are not displayed.
                 if (event.isCallEvent() && !event.type.equals(Event.EVENT_TYPE_CALL_INVITE)) {
+                    // dismiss the call notifications
+                    if (event.type.equals(Event.EVENT_TYPE_CALL_HANGUP)) {
+                        String callId = null;
+
+                        try {
+                            callId = event.content.get("call_id").getAsString();
+                        } catch (Exception e) {}
+
+                        if (null != callId) {
+                            // hide the "call in progress notification"
+                            hidePendingCallNotification(callId);
+
+                            // hide the "incoming call" notification
+                            if (TextUtils.equals(mNotifiedCallId, callId)) {
+                                NotificationManager nm = (NotificationManager) EventStreamService.this.getSystemService(Context.NOTIFICATION_SERVICE);
+                                nm.cancelAll();
+                                mNotifiedCallId = null;
+                            }
+                        }
+                    }
                     return;
                 }
             }
@@ -211,7 +237,8 @@ public class EventStreamService extends Service {
 
             Boolean isInvitationEvent = false;
             String body;
-            String callId = null;
+
+            mNotifiedCallId = null;
 
             // call invitation
             if (event.isCallEvent()) {
@@ -219,9 +246,8 @@ public class EventStreamService extends Service {
                     body = getApplicationContext().getString(R.string.incoming_call);
 
                     try {
-                        callId = event.content.get("call_id").getAsString();
+                        mNotifiedCallId = event.content.get("call_id").getAsString();
                      } catch (Exception e) {}
-
                 } else {
                     EventDisplay eventDisplay = new EventDisplay(getApplicationContext(), event, room.getLiveState());
                     body = eventDisplay.getTextualDisplay().toString();
@@ -296,7 +322,7 @@ public class EventStreamService extends Service {
             mLatestNotification = NotificationUtils.buildMessageNotification(
                     EventStreamService.this,
                     from, session.getCredentials().userId,
-                    callId,
+                    mNotifiedCallId,
                     Matrix.getMXSessions(getApplicationContext()).size() > 1,
                     largeBitmap,
                     mUnreadMessagesCounter,
