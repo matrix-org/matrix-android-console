@@ -627,6 +627,7 @@ public class CallViewActivity extends FragmentActivity {
         }
 
         if (mIsCallEnded) {
+            EventStreamService.getInstance().hidePendingCallNotification(mCallId);
             startEndCallSound(this);
         }
 

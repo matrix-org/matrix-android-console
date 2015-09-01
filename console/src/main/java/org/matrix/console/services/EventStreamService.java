@@ -205,13 +205,6 @@ public class EventStreamService extends Service {
                         if (null != callId) {
                             // hide the "call in progress notification"
                             hidePendingCallNotification(callId);
-
-                            // hide the "incoming call" notification
-                            if (TextUtils.equals(mNotifiedCallId, callId)) {
-                                NotificationManager nm = (NotificationManager) EventStreamService.this.getSystemService(Context.NOTIFICATION_SERVICE);
-                                nm.cancelAll();
-                                mNotifiedCallId = null;
-                            }
                         }
                     }
                     return;
@@ -633,12 +626,17 @@ public class EventStreamService extends Service {
      * @param callId the ended call call id
      */
     public void hidePendingCallNotification(String callId) {
-        if ((null != callId) && (null != mCallId)) {
-            if (mCallId.equals(callId)) {
-                stopForeground(true);
-                updateListenerNotification();
-                mCallId = null;
-            }
+        if (TextUtils.equals(mCallId, callId)) {
+            stopForeground(true);
+            updateListenerNotification();
+            mCallId = null;
+        }
+
+        // hide the "incoming call" notification
+        if (TextUtils.equals(mNotifiedCallId, callId)) {
+            NotificationManager nm = (NotificationManager) EventStreamService.this.getSystemService(Context.NOTIFICATION_SERVICE);
+            nm.cancelAll();
+            mNotifiedCallId = null;
         }
     }
 }
