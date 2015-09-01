@@ -334,7 +334,9 @@ public class CallViewActivity extends FragmentActivity {
         // assume that the user cancels the call if it is ringing
         if (keyCode == KeyEvent.KEYCODE_BACK) {
             if (!canCallBeResumed()) {
-                mCall.hangup("");
+                if (null != mCall) {
+                    mCall.hangup("");
+                }
             } else {
                 saveCallView();
             }
@@ -413,7 +415,10 @@ public class CallViewActivity extends FragmentActivity {
      */
     private void onHangUp() {
         mSavedCallview = null;
-        mCall.hangup("");
+
+        if (null != mCall) {
+            mCall.hangup("");
+        }
     }
 
     /**
@@ -454,7 +459,9 @@ public class CallViewActivity extends FragmentActivity {
             mAcceptButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    mCall.answer();
+                    if (null != mCall) {
+                        mCall.answer();
+                    }
                 }
             });
 
