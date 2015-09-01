@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="org.matrix.console"
+    package="org.matrix.console" xmlns:tools="http://schemas.android.com/tools"
     android:versionName="0.3.1">
 
     <uses-permission android:name="android.permission.INTERNET" />
@@ -38,6 +38,9 @@
         android:protectionLevel="signature" />
     <uses-permission
         android:name="${applicationId}.permission.C2D_MESSAGE" />
+
+    <!-- libjingle is designed for API >= 15 but the app should work from API >= 11 -->
+    <uses-sdk tools:overrideLibrary="io.pristine.libjingle"/>
 
     <application
         android:allowBackup="true"
