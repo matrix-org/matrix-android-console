@@ -787,10 +787,10 @@ public class HomeActivity extends MXCActionBarActivity {
                 HomeActivity.this.runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        ConsoleApplication.getInstance().onCallEnd();
-                        HomeActivity.this.manageCallButton();
-
                         if (isActiveCall) {
+                            ConsoleApplication.getInstance().onCallEnd();
+                            HomeActivity.this.manageCallButton();
+
                             CallViewActivity.startEndCallSound(HomeActivity.this);
                         }
                     }
