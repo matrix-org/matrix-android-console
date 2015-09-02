@@ -13,6 +13,16 @@
         android:icon="@drawable/video"
         app:showAsAction="ifRoom" />
 
+    <item android:id="@+id/ic_action_enable_notification"
+        android:title="@string/action_enable_room_notification"
+        android:icon="@drawable/ic_material_settings_small"
+        app:showAsAction="never" />
+
+    <item android:id="@+id/ic_action_disable_notification"
+        android:title="@string/action_disable_room_notification"
+        android:icon="@drawable/ic_material_settings_small"
+        app:showAsAction="never" />
+
     <item android:id="@+id/ic_action_room_info"
         android:title="@string/action_room_info"
         android:icon="@drawable/ic_material_description"
