@@ -250,6 +250,7 @@ public class RoomActivity extends MXCActionBarActivity {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
+                    updateMenuEntries();
                     mConsoleMessageListFragment.onBingRulesUpdate();
                 }
             });
@@ -904,23 +905,29 @@ public class RoomActivity extends MXCActionBarActivity {
             mVideoMenuItem.setVisible(visible);
         }
 
-        // search if there is a rule for this room
-        List<BingRule> roomsRulesList = mSession.getDataHandler().pushRules().getRoomRules();
+        Boolean isPushDownloaded = (null != mSession.getDataHandler().pushRules());
 
-        for(BingRule rule : roomsRulesList) {
-            if (TextUtils.equals(rule.ruleId, mRoom.getRoomId())) {
-                mBingRule = rule;
+        if (isPushDownloaded) {
+            // search if there is a rule for this room
+            List<BingRule> roomsRulesList = mSession.getDataHandler().pushRules().getRoomRules();
+
+            if (null != roomsRulesList) {
+                for (BingRule rule : roomsRulesList) {
+                    if (TextUtils.equals(rule.ruleId, mRoom.getRoomId())) {
+                        mBingRule = rule;
+                    }
+                }
             }
         }
 
         boolean hasActiveRule = (null == mBingRule) || (mBingRule.isEnabled && mBingRule.shouldNotify());
 
         if (null != mEnableNotifItem) {
-            mEnableNotifItem.setVisible(!hasActiveRule && !mRuleInProgress);
+            mEnableNotifItem.setVisible(!hasActiveRule && !mRuleInProgress && isPushDownloaded);
         }
 
         if (null != mDisableNotifItem) {
-            mDisableNotifItem.setVisible(hasActiveRule && !mRuleInProgress);
+            mDisableNotifItem.setVisible(hasActiveRule && !mRuleInProgress && isPushDownloaded);
         }
     }
 
