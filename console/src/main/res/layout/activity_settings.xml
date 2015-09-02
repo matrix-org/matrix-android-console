@@ -199,6 +199,32 @@
             style="@style/Base.TextAppearance.AppCompat.Button"
             android:text="@string/clear_cache" />
 
+        <!-- bug reports section section -->
+        <TextView
+            android:layout_marginTop="10dp"
+            android:layout_marginBottom="10dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            style="@style/Base.TextAppearance.AppCompat.Title"
+            android:text="@string/settings_bugs_report"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_weight="1"
+                style="@style/Base.TextAppearance.AppCompat.Caption"
+                android:text = "@string/settings_rage_shake"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+            <CheckBox
+                android:id="@+id/checkbox_rageshake"
+                android:layout_width="30dp"
+                android:layout_height="wrap_content"/>
+        </LinearLayout>
+
         <!-- configuration section -->
 
         <TextView

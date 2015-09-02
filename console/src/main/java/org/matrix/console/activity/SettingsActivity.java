@@ -268,6 +268,8 @@ public class SettingsActivity extends MXCActionBarActivity {
         listenBoxUpdate(preferences, R.id.checkbox_sortByLastSeen, getString(R.string.settings_key_sort_by_last_seen), true);
         listenBoxUpdate(preferences, R.id.checkbox_displayLeftMembers, getString(R.string.settings_key_display_left_members), false);
         listenBoxUpdate(preferences, R.id.checkbox_displayPublicRooms, getString(R.string.settings_key_display_public_rooms_recents), true);
+        listenBoxUpdate(preferences, R.id.checkbox_rageshake, getString(R.string.settings_key_use_rage_shake), true);
+
 
         final Button clearCacheButton = (Button) findViewById(R.id.button_clear_cache);
 

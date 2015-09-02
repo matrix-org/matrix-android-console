@@ -175,6 +175,8 @@
     <string name="settings_title_notifications_rules">Update Notifications Rules</string>
     <string name="settings_title_rooms">Rooms</string>
     <string name="settings_title_commands">Commands</string>
+    <string name="settings_bugs_report">Bug Reports</string>
+
     <string name="settings_config_console_version">matrixConsole version: %s</string>
     <string name="settings_config_sdk_version">SDK version: %s</string>
     <string name="settings_config_build_number">Build: %s</string>
@@ -186,6 +188,7 @@
     <string name="settings_display_left_members">Display left members</string>
     <string name="settings_clear_cache">Clear cache</string>
     <string name="settings_display_public_rooms">Display public rooms with recents</string>
+    <string name="settings_rage_shake">Rageshaking to submit bug reports</string>
 
     <!-- Notification settings screen -->
     <string name="notification_settings_title">Notification Settings</string>
@@ -247,6 +250,7 @@
     <string name="settings_key_display_left_members">settings_key_display_left_members</string>
     <string name="settings_key_display_public_rooms_recents">settings_key_display_public_rooms_recents</string>
     <string name="settings_key_use_google_cloud_messaging">settings_key_use_google_cloud_messaging</string>
+    <string name="settings_key_use_rage_shake">settings_key_use_rage_shake</string>
 
     <string name="logo">Logo</string>
     <string name="user_says_body">%1$s says %2$s</string>
