@@ -256,12 +256,12 @@ public class RoomActivity extends MXCActionBarActivity {
         }
     };
 
-    public void appendTextToEditor(String text) {
+    public void insertInTextEditor(String text) {
         if (null != text) {
             if (TextUtils.isEmpty(mEditText.getText())) {
                 mEditText.append(text + ": ");
             } else {
-                mEditText.append(text);
+                mEditText.getText().insert(mEditText.getSelectionStart(), text);
             }
         }
     }
@@ -942,7 +942,7 @@ public class RoomActivity extends MXCActionBarActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
-        
+
         // mBingRulesManager.toggleRule(rule, mOnBingRuleUpdateListener);
         if (!mRuleInProgress && ((id == R.id.ic_action_enable_notification) || (id == R.id.ic_action_disable_notification))) {
             final BingRulesManager bingRulesManager = mSession.getDataHandler().getBingRulesManager();
@@ -1087,7 +1087,7 @@ public class RoomActivity extends MXCActionBarActivity {
             mRoom.leave(new SimpleApiCallback<Void>(RoomActivity.this) {
             });
             RoomActivity.this.finish();
-        } else if (id ==  R.id.ic_action_settings) {
+        } else if (id == R.id.ic_action_settings) {
             RoomActivity.this.startActivity(new Intent(RoomActivity.this, SettingsActivity.class));
         } else if (id ==  R.id.ic_send_bug_report) {
             RageShake.getInstance().sendBugReport();

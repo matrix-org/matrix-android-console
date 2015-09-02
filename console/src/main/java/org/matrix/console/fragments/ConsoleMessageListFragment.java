@@ -452,7 +452,7 @@ public class ConsoleMessageListFragment extends MatrixMessageListFragment implem
     @Override
     public Boolean onDisplayNameClick(String userId, String displayName) {
         if (getActivity() instanceof RoomActivity) {
-            ((RoomActivity)getActivity()).appendTextToEditor(displayName);
+            ((RoomActivity)getActivity()).insertInTextEditor(displayName);
             return true;
         }
 
