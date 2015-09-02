@@ -751,7 +751,7 @@ public class HomeActivity extends MXCActionBarActivity {
                 // can only manage one call instance.
                 if (null == CallViewActivity.getActiveCall()) {
                     // display the call activity only if the application is in background.
-                    /*if (!ConsoleApplication.isAppInBackground())*/ {
+                    if (!ConsoleApplication.isAppInBackground()) {
                         // create the call object
                         if (null != call) {
                             final Intent intent = new Intent(HomeActivity.this, CallViewActivity.class);
