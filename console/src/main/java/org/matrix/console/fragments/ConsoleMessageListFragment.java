@@ -184,14 +184,28 @@ public class ConsoleMessageListFragment extends MatrixMessageListFragment implem
         if (Event.EVENT_TYPE_STATE_ROOM_TOPIC.equals(messageRow.getEvent().type) ||
             Event.EVENT_TYPE_STATE_ROOM_MEMBER.equals(messageRow.getEvent().type) ||
             Event.EVENT_TYPE_STATE_ROOM_NAME.equals(messageRow.getEvent().type)) {
+
+            if (!messageRow.getEvent().userId.equals(getSession().getCredentials().userId)) {
+                textIds.add(R.string.paste_username);
+                iconIds.add(R.drawable.ic_material_paste);
+            }
+
             textIds.add(R.string.copy);
             iconIds.add(R.drawable.ic_material_copy);
         } else  {
 
             // copy the message body
-            if ((Event.EVENT_TYPE_MESSAGE.equals(messageRow.getEvent().type)) && Message.MSGTYPE_TEXT.equals(message.msgtype)) {
-                textIds.add(R.string.copy);
-                iconIds.add(R.drawable.ic_material_copy);
+            if (Event.EVENT_TYPE_MESSAGE.equals(messageRow.getEvent().type)) {
+
+                if (!messageRow.getEvent().userId.equals(getSession().getCredentials().userId)) {
+                    textIds.add(R.string.paste_username);
+                    iconIds.add(R.drawable.ic_material_paste);
+                }
+
+                if (Message.MSGTYPE_TEXT.equals(message.msgtype)) {
+                    textIds.add(R.string.copy);
+                    iconIds.add(R.drawable.ic_material_copy);
+                }
             }
 
             if (messageRow.getEvent().canBeResent()) {
@@ -353,6 +367,15 @@ public class ConsoleMessageListFragment extends MatrixMessageListFragment implem
                             fragment.show(fm, TAG_FRAGMENT_MESSAGE_DETAILS);
                         }
                     });
+                } else if (selectedVal == R.string.paste_username) {
+                    String displayName = messageRow.getEvent().userId;
+                    RoomState state = messageRow.getRoomState();
+
+                    if (null != state) {
+                        displayName = state.getMemberName(displayName);
+                    }
+
+                    onDisplayNameClick(messageRow.getEvent().userId, displayName);
                 }
             }
         });
