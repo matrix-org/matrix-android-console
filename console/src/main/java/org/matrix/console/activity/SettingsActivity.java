@@ -32,6 +32,7 @@ import android.preference.PreferenceManager;
 import android.provider.MediaStore;
 import android.support.v4.app.FragmentManager;
 import android.text.Editable;
+import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.view.MenuItem;
@@ -598,17 +599,34 @@ public class SettingsActivity extends MXCActionBarActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    private void saveChanges(final MXSession session) {
+    /**
+     * Return the edited username for a dedicated session.
+     * @param session the session
+     * @return the edited text
+     */
+    private String getEditedUserName(final MXSession session) {
         LinearLayout linearLayout = mLinearLayoutBySession.get(session);
         EditText displayNameEditText = (EditText) linearLayout.findViewById(R.id.editText_displayName);
 
-        // Save things
-        final String nameFromForm = displayNameEditText.getText().toString();
+        if (!TextUtils.isEmpty(displayNameEditText.getText())) {
+            // trim the text to avoid trailing /n after a c+p
+            return displayNameEditText.getText().toString().trim();
+        }
 
+        return "";
+    }
+
+    private void saveChanges(final MXSession session) {
+        LinearLayout linearLayout = mLinearLayoutBySession.get(session);
+
+        final String nameFromForm = getEditedUserName(session);
         final ApiCallback<Void> changeCallback = UIUtils.buildOnChangeCallback(this);
 
         final MyUser myUser = session.getMyUser();
         final Button saveButton = (Button) linearLayout.findViewById(R.id.button_save);
+
+        // disable the save button to avoid unexpected behaviour
+        saveButton.setEnabled(false);
 
         if (UIUtils.hasFieldChanged(myUser.displayname, nameFromForm)) {
             myUser.updateDisplayName(nameFromForm, new SimpleApiCallback<Void>(changeCallback) {
@@ -679,15 +697,12 @@ public class SettingsActivity extends MXCActionBarActivity {
             return true;
         }
 
-        for(MXSession session : Matrix.getMXSessions(this)) {
-            LinearLayout linearLayout = mLinearLayoutBySession.get(session);
-            EditText displayNameEditText = (EditText) linearLayout.findViewById(R.id.editText_displayName);
+        Boolean res = false;
 
-           if (UIUtils.hasFieldChanged(session.getMyUser().displayname, displayNameEditText.getText().toString())) {
-               return true;
-           }
+        for(MXSession session : Matrix.getMXSessions(this)) {
+            res |= UIUtils.hasFieldChanged(session.getMyUser().displayname, getEditedUserName(session));
         }
 
-        return false;
+        return res;
     }
 }
