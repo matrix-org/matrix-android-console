@@ -338,7 +338,7 @@ public class EventStreamService extends Service {
                     // turn the screen on for 3 seconds
                     PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
                     PowerManager.WakeLock wl = pm.newWakeLock(PowerManager.FULL_WAKE_LOCK, "MXEventListener");
-                    wl.acquire(3000);
+                    wl.acquire((null != mNotifiedCallId) ? 30000 : 3000);
                     wl.release();
                 } catch (Exception e) {
                     Log.e(LOG_TAG, "onLiveEventsChunkProcessed crashed "+ e.getLocalizedMessage());
