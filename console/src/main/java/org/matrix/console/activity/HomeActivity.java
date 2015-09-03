@@ -16,11 +16,14 @@
 
 package org.matrix.console.activity;
 
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.PowerManager;
 import android.support.v4.app.FragmentManager;
 import android.text.TextUtils;
 import android.text.TextWatcher;
@@ -524,6 +527,17 @@ public class HomeActivity extends MXCActionBarActivity {
         mSearchRoomEditText.setText("");
     }
 
+    @SuppressLint("NewApi")
+    private boolean isScreenOn() {
+        PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
+
+        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH) {
+            return powerManager.isInteractive();
+        } else {
+            return powerManager.isScreenOn();
+        }
+    }
+
     /**
      * Add a MXEventListener to the session listeners.
      * @param session the sessions.
@@ -739,7 +753,6 @@ public class HomeActivity extends MXCActionBarActivity {
         session.getDataHandler().addListener(listener);
         mListenersBySession.put(session, listener);
 
-
         // call listener
         MXCallsManager.MXCallsManagerListener callsManagerListener = new MXCallsManager.MXCallsManagerListener() {
 
@@ -751,7 +764,7 @@ public class HomeActivity extends MXCActionBarActivity {
                 // can only manage one call instance.
                 if (null == CallViewActivity.getActiveCall()) {
                     // display the call activity only if the application is in background.
-                    if (!ConsoleApplication.isAppInBackground()) {
+                    if (HomeActivity.this.isScreenOn()) {
                         // create the call object
                         if (null != call) {
                             final Intent intent = new Intent(HomeActivity.this, CallViewActivity.class);
