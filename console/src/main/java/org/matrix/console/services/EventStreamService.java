@@ -43,6 +43,7 @@ import org.matrix.console.ConsoleApplication;
 import org.matrix.console.Matrix;
 import org.matrix.console.R;
 import org.matrix.console.ViewedRoomTracker;
+import org.matrix.console.activity.CallViewActivity;
 import org.matrix.console.activity.CommonActivityUtils;
 import org.matrix.console.activity.HomeActivity;
 import org.matrix.console.util.NotificationUtils;
@@ -128,6 +129,25 @@ public class EventStreamService extends Service {
     }
 
     private MXEventListener mListener = new MXEventListener() {
+        /**
+         * Manage hangup event.
+         * The ringing sound is disabled and pending incoming call is dismissed.
+         * @param event the hangup event.
+         */
+        private void manageHangUpEvent(Event event) {
+            String callId = null;
+
+            try {
+                callId = event.content.get("call_id").getAsString();
+            } catch (Exception e) {}
+
+            if (null != callId) {
+                // hide the "call in progress notification"
+                hidePendingCallNotification(callId);
+            }
+
+            CallViewActivity.stopRinging();
+        }
 
         // White list of displayable events
         private boolean isDisplayableEvent(Event event) {
@@ -142,6 +162,10 @@ public class EventStreamService extends Service {
 
         @Override
         public void onLiveEvent(Event event, RoomState roomState) {
+            if (Event.EVENT_TYPE_CALL_HANGUP.equals(event.type)) {
+                manageHangUpEvent(event);
+            }
+
             if ((event.roomId != null) && isDisplayableEvent(event)) {
                 ViewedRoomTracker rTracker = ViewedRoomTracker.getInstance();
                 String viewedRoomId = rTracker.getViewedRoomId();
@@ -196,16 +220,7 @@ public class EventStreamService extends Service {
                 if (event.isCallEvent() && !event.type.equals(Event.EVENT_TYPE_CALL_INVITE)) {
                     // dismiss the call notifications
                     if (event.type.equals(Event.EVENT_TYPE_CALL_HANGUP)) {
-                        String callId = null;
-
-                        try {
-                            callId = event.content.get("call_id").getAsString();
-                        } catch (Exception e) {}
-
-                        if (null != callId) {
-                            // hide the "call in progress notification"
-                            hidePendingCallNotification(callId);
-                        }
+                        manageHangUpEvent(event);
                     }
                     return;
                 }
@@ -312,6 +327,12 @@ public class EventStreamService extends Service {
 
             mNotificationRoomId = roomId;
 
+            if (bingRule.isCallRingNotificationSound(bingRule.notificationSound())) {
+                if (null == CallViewActivity.getActiveCall()) {
+                    CallViewActivity.startRinging(EventStreamService.this);
+                }
+            }
+
             mLatestNotification = NotificationUtils.buildMessageNotification(
                     EventStreamService.this,
                     from, session.getCredentials().userId,
@@ -338,7 +359,7 @@ public class EventStreamService extends Service {
                     // turn the screen on for 3 seconds
                     PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
                     PowerManager.WakeLock wl = pm.newWakeLock(PowerManager.FULL_WAKE_LOCK, "MXEventListener");
-                    wl.acquire((null != mNotifiedCallId) ? 30000 : 3000);
+                    wl.acquire(3000);
                     wl.release();
                 } catch (Exception e) {
                     Log.e(LOG_TAG, "onLiveEventsChunkProcessed crashed "+ e.getLocalizedMessage());
@@ -580,8 +601,7 @@ public class EventStreamService extends Service {
             startForeground(NOTIFICATION_ID, notification);
             mIsForegound = false;
         } else {
-            NotificationManager nm = (NotificationManager) EventStreamService.this.getSystemService(Context.NOTIFICATION_SERVICE);
-            nm.cancel(NOTIFICATION_ID);
+            stopForeground(true);
             mIsForegound = false;
         }
     }

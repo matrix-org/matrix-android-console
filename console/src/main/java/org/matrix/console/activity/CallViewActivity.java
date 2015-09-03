@@ -701,7 +701,7 @@ public class CallViewActivity extends FragmentActivity {
     /**
      * Start the ringing sound
      */
-    private static void startRinging(Context context) {
+    public static void startRinging(Context context) {
         if (null == mRingingPLayer) {
             mRingingPLayer = MediaPlayer.create(context.getApplicationContext(), R.raw.ring);
             mRingingPLayer.setLooping(true);
@@ -724,7 +724,7 @@ public class CallViewActivity extends FragmentActivity {
     /**
      * Stop the ringing sound
      */
-    private static void stopRinging() {
+    public static void stopRinging() {
         // sanity checks
         if ((null != mRingingPLayer) && mRingingPLayer.isPlaying()) {
             mRingingPLayer.pause();
