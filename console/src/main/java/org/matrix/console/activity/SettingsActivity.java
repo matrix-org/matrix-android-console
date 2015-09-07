@@ -108,7 +108,9 @@ public class SettingsActivity extends MXCActionBarActivity {
         size += mMediasCache.cacheSize();
 
         for(MXSession session : Matrix.getMXSessions(SettingsActivity.this)) {
-            size += session.getDataHandler().getStore().diskUsage();
+            if (session.isActive()) {
+                size += session.getDataHandler().getStore().diskUsage();
+            }
         }
 
         return android.text.format.Formatter.formatFileSize(SettingsActivity.this, size);
