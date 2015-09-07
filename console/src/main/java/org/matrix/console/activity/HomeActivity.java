@@ -16,11 +16,14 @@
 
 package org.matrix.console.activity;
 
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.PowerManager;
 import android.support.v4.app.FragmentManager;
 import android.text.TextUtils;
 import android.text.TextWatcher;
@@ -37,6 +40,8 @@ import android.widget.ExpandableListView;
 import android.widget.Toast;
 
 import org.matrix.androidsdk.MXSession;
+import org.matrix.androidsdk.call.IMXCall;
+import org.matrix.androidsdk.call.MXCallsManager;
 import org.matrix.androidsdk.data.Room;
 import org.matrix.androidsdk.data.RoomState;
 import org.matrix.androidsdk.data.RoomSummary;
@@ -52,6 +57,7 @@ import org.matrix.androidsdk.rest.model.RoomMember;
 import org.matrix.androidsdk.rest.model.login.Credentials;
 import org.matrix.androidsdk.util.EventUtils;
 import org.matrix.androidsdk.util.JsonUtils;
+import org.matrix.console.ConsoleApplication;
 import org.matrix.console.Matrix;
 import org.matrix.console.MyPresenceManager;
 import org.matrix.console.R;
@@ -62,6 +68,7 @@ import org.matrix.console.fragments.AccountsSelectionDialogFragment;
 import org.matrix.console.fragments.ContactsListDialogFragment;
 import org.matrix.console.fragments.RoomCreationDialogFragment;
 import org.matrix.console.gcm.GcmRegistrationManager;
+import org.matrix.console.services.EventStreamService;
 import org.matrix.console.util.RageShake;
 
 import java.io.Serializable;
@@ -106,6 +113,8 @@ public class HomeActivity extends MXCActionBarActivity {
 
     private boolean refreshOnChunkEnd = false;
 
+    private MenuItem mCallMenuItem = null;
+
     // sliding menu
     private final Integer[] mSlideMenuTitleIds = new Integer[]{
             //R.string.action_search_contact,
@@ -137,6 +146,8 @@ public class HomeActivity extends MXCActionBarActivity {
     };
 
     private HashMap<MXSession, MXEventListener> mListenersBySession = new HashMap<MXSession, MXEventListener>();
+    private HashMap<MXSession, MXCallsManager.MXCallsManagerListener> mCallListenersBySession = new HashMap<MXSession, MXCallsManager.MXCallsManagerListener>();
+
     private ConsoleRoomSummaryAdapter mAdapter;
     private EditText mSearchRoomEditText;
 
@@ -175,9 +186,7 @@ public class HomeActivity extends MXCActionBarActivity {
         }
     }
 
-
     private void joinPublicRoom(final String homeServerURL, final PublicRoom publicRoom) {
-
         Collection<MXSession> sessions = Matrix.getMXSessions(HomeActivity.this);
         ArrayList<MXSession> matchedSessions = new ArrayList<MXSession>();
 
@@ -220,6 +229,11 @@ public class HomeActivity extends MXCActionBarActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        if (CommonActivityUtils.shouldRestartApp()) {
+            Log.e(LOG_TAG, "Restart the application.");
+            CommonActivityUtils.restartApp(this);
+        }
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
 
@@ -353,8 +367,8 @@ public class HomeActivity extends MXCActionBarActivity {
                                     HomeActivity.this.runOnUiThread(new Runnable() {
                                         @Override
                                         public void run() {
-                                            RoomSummary roomSummary = mAdapter.getRoomSummaryAt(groupPosition, childPosition);
-                                            MXSession session = Matrix.getInstance(HomeActivity.this).getSession(roomSummary.getMatrixId());
+                                            final RoomSummary roomSummary = mAdapter.getRoomSummaryAt(groupPosition, childPosition);
+                                            final MXSession session = Matrix.getInstance(HomeActivity.this).getSession(roomSummary.getMatrixId());
 
                                             String roomId = roomSummary.getRoomId();
                                             Room room = session.getDataHandler().getRoom(roomId);
@@ -363,6 +377,8 @@ public class HomeActivity extends MXCActionBarActivity {
                                                 room.leave(new SimpleApiCallback<Void>(HomeActivity.this) {
                                                     @Override
                                                     public void onSuccess(Void info) {
+                                                        mAdapter.removeRoomSummary(groupPosition, roomSummary);
+                                                        mAdapter.notifyDataSetChanged();
                                                     }
                                                 });
                                             }
@@ -511,11 +527,24 @@ public class HomeActivity extends MXCActionBarActivity {
         mSearchRoomEditText.setText("");
     }
 
+    @SuppressLint("NewApi")
+    private boolean isScreenOn() {
+        PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
+
+        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH) {
+            return powerManager.isInteractive();
+        } else {
+            return powerManager.isScreenOn();
+        }
+    }
+
     /**
      * Add a MXEventListener to the session listeners.
      * @param session the sessions.
      */
     private void addSessionListener(final MXSession session) {
+        removeSessionListener(session);
+
         MXEventListener listener = new MXEventListener() {
             private boolean mInitialSyncComplete = false;
 
@@ -610,11 +639,11 @@ public class HomeActivity extends MXCActionBarActivity {
                             List<MXSession> sessions = new ArrayList<MXSession>(Matrix.getMXSessions(HomeActivity.this));
                             int section = sessions.indexOf(session);
                             String matrixId = session.getCredentials().userId;
-                            Room room = session.getDataHandler().getRoom(event.roomId);
 
                             mAdapter.setLatestEvent(section, event, roomState);
 
                             RoomSummary summary = mAdapter.getSummaryByRoomId(section, event.roomId);
+
                             if (summary == null) {
                                 // ROOM_CREATE events will be sent during initial sync. We want to ignore them
                                 // until the initial sync is done (that is, only refresh the list when there
@@ -636,18 +665,16 @@ public class HomeActivity extends MXCActionBarActivity {
                             }
 
                             // If we've left the room, remove it from the list
-                            else if (mInitialSyncComplete && Event.EVENT_TYPE_STATE_ROOM_MEMBER.equals(event.type) &&
-                                    isMembershipInRoom(RoomMember.MEMBERSHIP_LEAVE, matrixId, summary)) {
-                                mAdapter.removeRoomSummary(section, summary);
-                                // remove the cached data
-                                session.getDataHandler().getStore().deleteRoom(event.roomId);
+                            else if (mInitialSyncComplete && Event.EVENT_TYPE_STATE_ROOM_MEMBER.equals(event.type)) {
+                                if (!(session.getDataHandler().doesRoomExist(event.roomId)) || isMembershipInRoom(RoomMember.MEMBERSHIP_LEAVE, matrixId, summary)) {
+                                    mAdapter.removeRoomSummary(section, summary);
+                                }
                             }
-
                             // Watch for potential room name changes
                             else if (Event.EVENT_TYPE_STATE_ROOM_NAME.equals(event.type)
                                     || Event.EVENT_TYPE_STATE_ROOM_ALIASES.equals(event.type)
                                     || Event.EVENT_TYPE_STATE_ROOM_MEMBER.equals(event.type)) {
-                                summary.setName(room.getName(matrixId));
+                                summary.setName(session.getDataHandler().getRoom(event.roomId).getName(matrixId));
                             }
 
                             ViewedRoomTracker rTracker = ViewedRoomTracker.getInstance();
@@ -725,6 +752,67 @@ public class HomeActivity extends MXCActionBarActivity {
 
         session.getDataHandler().addListener(listener);
         mListenersBySession.put(session, listener);
+
+        // call listener
+        MXCallsManager.MXCallsManagerListener callsManagerListener = new MXCallsManager.MXCallsManagerListener() {
+
+            /**
+             * Called when there is an incoming call within the room.
+             */
+            @Override
+            public void onIncomingCall(final IMXCall call) {
+                // can only manage one call instance.
+                if (null == CallViewActivity.getActiveCall()) {
+                    // display the call activity only if the application is in background.
+                    if (HomeActivity.this.isScreenOn()) {
+                        // create the call object
+                        if (null != call) {
+                            final Intent intent = new Intent(HomeActivity.this, CallViewActivity.class);
+
+                            intent.putExtra(CallViewActivity.EXTRA_MATRIX_ID, session.getCredentials().userId);
+                            intent.putExtra(CallViewActivity.EXTRA_CALL_ID, call.getCallId());
+
+                            HomeActivity.this.runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    HomeActivity.this.startActivity(intent);
+                                }
+                            });
+                        }
+                    }
+                } else {
+                    HomeActivity.this.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            call.hangup("busy");
+                        }
+                    });
+                }
+            }
+
+            /**
+             * Called when a called has been hung up
+             */
+            @Override
+            public void onCallHangUp(IMXCall call) {
+                final Boolean isActiveCall = CallViewActivity.isBackgroundedCallId(call.getCallId());
+
+                HomeActivity.this.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (isActiveCall) {
+                            ConsoleApplication.getInstance().onCallEnd();
+                            HomeActivity.this.manageCallButton();
+
+                            CallViewActivity.startEndCallSound(HomeActivity.this);
+                        }
+                    }
+                });
+            }
+        };
+
+        session.mCallsManager.addListener(callsManagerListener);
+        mCallListenersBySession.put(session, callsManagerListener);
     }
 
     /**
@@ -736,8 +824,12 @@ public class HomeActivity extends MXCActionBarActivity {
             session.getDataHandler().removeListener(mListenersBySession.get(session));
             mListenersBySession.remove(session);
         }
-    }
 
+        if (mCallListenersBySession.containsKey(session)) {
+            session.mCallsManager.removeListener(mCallListenersBySession.get(session));
+            mCallListenersBySession.remove(session);
+        }
+    }
 
     @Override
     public void onDestroy() {
@@ -752,9 +844,7 @@ public class HomeActivity extends MXCActionBarActivity {
     @Override
     protected void onPause() {
         super.onPause();
-        MyPresenceManager.advertiseAllUnavailableAfterDelay();
         mExpandedGroups = getExpandedGroupsList();
-
         mIsPaused = true;
     }
 
@@ -828,6 +918,7 @@ public class HomeActivity extends MXCActionBarActivity {
         }
 
         refreshSlidingList();
+        manageCallButton();
     }
 
     @Override
@@ -901,10 +992,24 @@ public class HomeActivity extends MXCActionBarActivity {
         return super.onKeyDown(keyCode, event);
     }
 
+    /**
+     * Display or hide the the call button.
+     * it is used to resume a call.
+     */
+    private void manageCallButton() {
+        if (null != mCallMenuItem) {
+            mCallMenuItem.setVisible(CallViewActivity.getActiveCall() != null);
+        }
+    }
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.home, menu);
+
+        mCallMenuItem = menu.findItem(R.id.ic_action_resume_call);
+        manageCallButton();
+
         return true;
     }
 
@@ -919,8 +1024,22 @@ public class HomeActivity extends MXCActionBarActivity {
             toggleSearchButton();
         } else if (id == R.id.ic_action_mark_all_as_read) {
             markAllMessagesAsRead();
-        }
+        } else if (id == R.id.ic_action_resume_call) {
+            IMXCall call = CallViewActivity.getActiveCall();
+            if (null != call) {
+                final Intent intent = new Intent(HomeActivity.this, CallViewActivity.class);
+                intent.putExtra(CallViewActivity.EXTRA_MATRIX_ID, call.getSession().getCredentials().userId);
+                intent.putExtra(CallViewActivity.EXTRA_CALL_ID, call.getCallId());
 
+                HomeActivity.this.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        HomeActivity.this.startActivity(intent);
+                    }
+                });
+            }
+
+        }
         return super.onOptionsItemSelected(item);
     }
 

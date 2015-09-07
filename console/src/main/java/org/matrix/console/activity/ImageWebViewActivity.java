@@ -126,6 +126,10 @@ public class ImageWebViewActivity extends FragmentActivity {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        if (CommonActivityUtils.shouldRestartApp()) {
+            CommonActivityUtils.restartApp(this);
+        }
+        
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_image_web_view);
 
@@ -256,7 +260,7 @@ public class ImageWebViewActivity extends FragmentActivity {
                     final Integer[] icons = {R.drawable.ic_material_share, R.drawable.ic_material_forward};
                     final Integer[] textIds = {R.string.share, R.string.forward};
 
-                    fragment = IconAndTextDialogFragment.newInstance(icons, textIds, Color.WHITE);
+                    fragment = IconAndTextDialogFragment.newInstance(icons, textIds, Color.WHITE, null);
                     fragment.setOnClickListener(new IconAndTextDialogFragment.OnItemClickListener() {
                         @Override
                         public void onItemClick(IconAndTextDialogFragment dialogFragment, int position) {

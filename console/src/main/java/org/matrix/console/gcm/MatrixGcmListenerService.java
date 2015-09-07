@@ -21,13 +21,17 @@ import android.util.Log;
 
 import com.google.android.gms.gcm.GcmListenerService;
 
+import org.matrix.console.ConsoleApplication;
 import org.matrix.console.Matrix;
 import org.matrix.console.activity.CommonActivityUtils;
+
+import java.util.logging.Handler;
 
 public class MatrixGcmListenerService extends GcmListenerService {
 
     private static final String LOG_TAG = "GcmListenerService";
     private Boolean mCheckLaunched = false;
+    private android.os.Handler mUIhandler = null;
 
     /**
      * Called when message is received.
@@ -37,20 +41,29 @@ public class MatrixGcmListenerService extends GcmListenerService {
      *             For Set of keys use data.keySet().
      */
     @Override
-    public void onMessageReceived(String from, Bundle data) {
+    public void onMessageReceived(final String from, final Bundle data) {
         Log.d(LOG_TAG, " onMessageReceived ");
 
-        for (String key : data.keySet()) {
-            Log.e(LOG_TAG, " >>> " + key + " : " + data.get(key));
+        if (null == mUIhandler) {
+            mUIhandler = new android.os.Handler(ConsoleApplication.getInstance().getMainLooper());
         }
-        // check if the application has been launched once
-        // the first GCM event could have been triggered whereas the application is not yet launched.
-        // so it is required to create the sessions and to start/resume event stream
-        if (!mCheckLaunched && (null != Matrix.getInstance(getApplicationContext()).getDefaultSession())) {
-            CommonActivityUtils.startEventStreamService(this);
-            mCheckLaunched = true;
-        }
-        
-        CommonActivityUtils.catchupEventStream(this);
+
+        mUIhandler.post(new Runnable() {
+            @Override
+            public void run() {
+                for (String key : data.keySet()) {
+                    Log.e(LOG_TAG, " >>> " + key + " : " + data.get(key));
+                }
+                // check if the application has been launched once
+                // the first GCM event could have been triggered whereas the application is not yet launched.
+                // so it is required to create the sessions and to start/resume event stream
+                if (!mCheckLaunched && (null != Matrix.getInstance(getApplicationContext()).getDefaultSession())) {
+                    CommonActivityUtils.startEventStreamService(MatrixGcmListenerService.this);
+                    mCheckLaunched = true;
+                }
+
+                CommonActivityUtils.catchupEventStream(MatrixGcmListenerService.this);
+            }
+        });
     }
 }

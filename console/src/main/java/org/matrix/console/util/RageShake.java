@@ -17,6 +17,7 @@ package org.matrix.console.util;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
@@ -31,6 +32,7 @@ import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -41,6 +43,7 @@ import android.hardware.SensorManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
+import android.preference.PreferenceManager;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.Gravity;
@@ -51,6 +54,7 @@ import org.matrix.androidsdk.MXSession;
 import org.matrix.console.ConsoleApplication;
 import org.matrix.console.Matrix;
 import org.matrix.androidsdk.data.MyUser;
+import org.matrix.console.R;
 
 
 public class RageShake implements SensorEventListener {
@@ -96,7 +100,7 @@ public class RageShake implements SensorEventListener {
                 // store the file in shared place
                 String path = MediaStore.Images.Media.insertImage(mContext.getContentResolver(), screenShot, "screenshot-" + new Date(), null);
 
-                Intent intent = new Intent(Intent.ACTION_SEND);
+                Intent intent = new Intent(Intent.ACTION_SEND_MULTIPLE);
                 intent.setType("text/html");
                 intent.putExtra(Intent.EXTRA_EMAIL, new String[]{"rageshake@matrix.org"});
                 intent.putExtra(Intent.EXTRA_SUBJECT, "Matrix bug report");
@@ -138,9 +142,11 @@ public class RageShake implements SensorEventListener {
 
                 intent.putExtra(Intent.EXTRA_TEXT, message);
 
+                ArrayList<Uri> attachmentUris = new ArrayList<Uri>();
+
                 // attachments
                 intent.setType("image/jpg");
-                intent.putExtra(Intent.EXTRA_STREAM, Uri.parse(path));
+                attachmentUris.add(Uri.parse(path));
 
                 String errorLog = LogUtilities.getLogCatError();
                 String debugLog = LogUtilities.getLogCatDebug();
@@ -149,20 +155,55 @@ public class RageShake implements SensorEventListener {
                 errorLog += debugLog;
 
                 try {
-                    ByteArrayOutputStream os = new ByteArrayOutputStream();
-                    GZIPOutputStream gzip = new GZIPOutputStream(os);
-                    gzip.write(errorLog.getBytes());
-                    gzip.finish();
 
-                    File debugLogFile = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "logs-" + new Date() + ".gz");
-                    FileOutputStream fos = new FileOutputStream(debugLogFile);
-                    os.writeTo(fos);
+                    // add the current device logs
+                    {
+                        ByteArrayOutputStream os = new ByteArrayOutputStream();
+                        GZIPOutputStream gzip = new GZIPOutputStream(os);
+                        gzip.write(errorLog.getBytes());
+                        gzip.finish();
 
-                    intent.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(debugLogFile));
+                        File debugLogFile = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "logs-" + new Date() + ".gz");
+                        FileOutputStream fos = new FileOutputStream(debugLogFile);
+                        os.writeTo(fos);
+                        os.flush();
+                        os.close();
+
+                        attachmentUris.add(Uri.fromFile(debugLogFile));
+                    }
+
+                    // add the stored logs
+                    ArrayList<File> logsList = LogUtilities.getLogsFileList();
+
+                    long marker = System.currentTimeMillis();
+
+                    for(File file : logsList) {
+                        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                        GZIPOutputStream glogzip = new GZIPOutputStream(bos);
+
+                        FileInputStream inputStream = new FileInputStream(file);
+
+                        byte[] buffer = new byte[1024 * 10];
+                        int len;
+                        while ((len = inputStream.read(buffer)) != -1) {
+                            glogzip.write(buffer, 0, len);
+                        }
+                        glogzip.finish();
+
+                        File storedLogFile = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), marker + "-" + file.getName() + ".gz");
+                        FileOutputStream flogOs = new FileOutputStream(storedLogFile);
+                        bos.writeTo(flogOs);
+                        flogOs.flush();
+                        flogOs.close();
+
+                        attachmentUris.add(Uri.fromFile(storedLogFile));
+                    }
                 }
                 catch (IOException e) {
                     Log.e(LOG_TAG, "" + e);
                 }
+
+                intent.putParcelableArrayListExtra(Intent.EXTRA_STREAM, attachmentUris);
 
                 ConsoleApplication.getCurrentActivity().startActivity(intent);
             } catch (Exception e) {
@@ -184,6 +225,18 @@ public class RageShake implements SensorEventListener {
                     public void onClick(DialogInterface dialog, int which) {
                         dialog.dismiss();
                         sendBugReport();
+                    }
+                })
+                .setNeutralButton("Disable", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(mContext);
+
+                        SharedPreferences.Editor editor = preferences.edit();
+                        editor.putBoolean(mContext.getString(R.string.settings_key_use_rage_shake), false);
+                        editor.commit();
+
+                        dialog.dismiss();
                     }
                 })
                 .setNegativeButton("NO", new DialogInterface.OnClickListener() {
@@ -298,7 +351,6 @@ public class RageShake implements SensorEventListener {
      * start the sensor detector
      */
     public void start(Context context) {
-
         mContext = context;
 
         SensorManager sm = (SensorManager)context.getSystemService(Context.SENSOR_SERVICE);
@@ -362,9 +414,14 @@ public class RageShake implements SensorEventListener {
                 force = Math.abs(x + y + z - lastX - lastY - lastZ);
                 if (Float.compare(force, threshold) >0 ) {
                     if (now - lastShake >= intervalNanos && (System.currentTimeMillis() - lastShakeTimestamp) > timeToNextShakeMs) { 
-                         Log.d(LOG_TAG, "Shaking detected.");
-                         lastShakeTimestamp = System.currentTimeMillis();
-                         promptForReport();
+                        Log.d(LOG_TAG, "Shaking detected.");
+                        lastShakeTimestamp = System.currentTimeMillis();
+
+                        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(mContext);
+
+                        if (preferences.getBoolean(mContext.getString(R.string.settings_key_use_rage_shake), true)) {
+                            promptForReport();
+                        }
                     }
                     else {
                         Log.d(LOG_TAG, "Suppress shaking - not passed interval. Ms to go: "+(timeToNextShakeMs - 

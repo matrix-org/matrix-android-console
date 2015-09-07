@@ -17,6 +17,7 @@
 package org.matrix.console;
 import android.app.Activity;
 import android.app.Application;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
@@ -31,13 +32,16 @@ import com.google.android.gms.analytics.GoogleAnalytics;
 import com.google.android.gms.analytics.HitBuilders;
 import com.google.android.gms.analytics.Tracker;
 
+import org.matrix.console.activity.CallViewActivity;
 import org.matrix.console.activity.CommonActivityUtils;
 import org.matrix.console.contacts.ContactsManager;
 import org.matrix.console.contacts.PIDsRetriever;
 import org.matrix.console.ga.Analytics;
 import org.matrix.console.services.EventStreamService;
+import org.matrix.console.util.LogUtilities;
 
 import java.io.Console;
+import java.io.File;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -57,9 +61,16 @@ public class ConsoleApplication extends Application {
     private int VERSION_BUILD = -1;
     private String VERSION_STRING = "";
 
+    private Boolean mIsCallingInBackground = false;
+
+    private static ConsoleApplication instance = null;
+
     @Override
     public void onCreate() {
         super.onCreate();
+
+        instance = this;
+
         mActivityTransitionTimer = null;
         mActivityTransitionTimerTask = null;
 
@@ -69,6 +80,9 @@ public class ConsoleApplication extends Application {
             VERSION_STRING = pinfo.versionName;
         }
         catch (PackageManager.NameNotFoundException e) {}
+
+        LogUtilities.setLogDirectory(new File(getCacheDir().getAbsolutePath()+"/logs"));
+        LogUtilities.storeLogcat();
 
         initGoogleAnalytics();
 
@@ -81,6 +95,33 @@ public class ConsoleApplication extends Application {
         isInBackground = false;
     }
 
+    public static ConsoleApplication getInstance() {
+        return instance;
+    }
+
+    /**
+     * Suspend background threads.
+     */
+    private void suspendApp() {
+        // suspend the events thread if the client uses GCM
+        if (Matrix.getInstance(ConsoleApplication.this).getSharedGcmRegistrationManager().useGCM()) {
+            CommonActivityUtils.pauseEventStream(ConsoleApplication.this);
+        }
+        PIDsRetriever.getIntance().onAppBackgrounded();
+
+        MyPresenceManager.advertiseAllUnavailable();
+    }
+
+    /**
+     * The application is warned that a call is ended.
+     */
+    public void onCallEnd() {
+        if (isInBackground && mIsCallingInBackground) {
+            mIsCallingInBackground = false;
+            suspendApp();
+        }
+    }
+
     public void startActivityTransitionTimer() {
 
         // reset the application badge when displaying a new activity
@@ -91,12 +132,13 @@ public class ConsoleApplication extends Application {
         this.mActivityTransitionTimerTask = new TimerTask() {
             public void run() {
                 ConsoleApplication.this.isInBackground = true;
+                mIsCallingInBackground = (null != CallViewActivity.getActiveCall());
 
-                // suspend the events thread if the client uses GCM
-                if (Matrix.getInstance(ConsoleApplication.this).getSharedGcmRegistrationManager().useGCM()) {
-                    CommonActivityUtils.pauseEventStream(ConsoleApplication.this);
+                // if there is a pending call
+                // the application is not suspended
+                if (!mIsCallingInBackground) {
+                    suspendApp();
                 }
-                PIDsRetriever.getIntance().onAppBackgrounded();
             }
         };
 
@@ -112,7 +154,7 @@ public class ConsoleApplication extends Application {
             this.mActivityTransitionTimer.cancel();
         }
 
-        if (isInBackground) {
+        if (isInBackground && !mIsCallingInBackground) {
             // resume the events thread if the client uses GCM
             if (Matrix.getInstance(ConsoleApplication.this).getSharedGcmRegistrationManager().useGCM()) {
 
@@ -127,6 +169,8 @@ public class ConsoleApplication extends Application {
             // get the contact update at application launch
             ContactsManager.refreshLocalContactsSnapshot(this);
         }
+
+        MyPresenceManager.advertiseAllOnline();
 
         this.isInBackground = false;
     }

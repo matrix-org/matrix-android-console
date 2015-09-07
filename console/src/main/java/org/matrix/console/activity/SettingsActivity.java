@@ -32,6 +32,7 @@ import android.preference.PreferenceManager;
 import android.provider.MediaStore;
 import android.support.v4.app.FragmentManager;
 import android.text.Editable;
+import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.view.MenuItem;
@@ -51,6 +52,7 @@ import org.matrix.androidsdk.rest.callback.ApiCallback;
 import org.matrix.androidsdk.rest.callback.SimpleApiCallback;
 import org.matrix.androidsdk.rest.model.ContentResponse;
 import org.matrix.androidsdk.util.ContentManager;
+import org.matrix.androidsdk.util.ImageUtils;
 import org.matrix.console.Matrix;
 import org.matrix.console.MyPresenceManager;
 import org.matrix.console.R;
@@ -59,6 +61,7 @@ import org.matrix.console.gcm.GcmRegistrationManager;
 import org.matrix.console.util.ResourceUtils;
 import org.matrix.console.util.UIUtils;
 
+import java.io.InputStream;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -70,19 +73,19 @@ public class SettingsActivity extends MXCActionBarActivity {
     private static final int REQUEST_IMAGE = 0;
 
     // stored the updated thumbnails URI by session
-    private HashMap<MXSession, Uri> mTmpThumbnailUriBySession = new HashMap<MXSession, Uri>();
+    private static HashMap<String, Uri> mTmpThumbnailUriByMatrixId = new HashMap<String, Uri>();
 
     // linear layout by session
     // each profile has a dedicated session.
-    private HashMap<MXSession, LinearLayout> mLinearLayoutBySession = new HashMap<MXSession, LinearLayout>();
+    private HashMap<String, LinearLayout> mLinearLayoutByMatrixId = new HashMap<String, LinearLayout>();
 
-    private MXSession mUpdatingSession = null;
+    private static String mUpdatingSessionId = null;
 
     private MXMediasCache mMediasCache;
 
     void refreshProfileThumbnail(MXSession session, LinearLayout baseLayout) {
         ImageView avatarView = (ImageView) baseLayout.findViewById(R.id.imageView_avatar);
-        Uri newAvatarUri = mTmpThumbnailUriBySession.get(session);
+        Uri newAvatarUri = mTmpThumbnailUriByMatrixId.get(session.getCredentials().userId);
         String avatarUrl = session.getMyUser().avatarUrl;
 
         if (null != newAvatarUri) {
@@ -105,7 +108,9 @@ public class SettingsActivity extends MXCActionBarActivity {
         size += mMediasCache.cacheSize();
 
         for(MXSession session : Matrix.getMXSessions(SettingsActivity.this)) {
-            size += session.getDataHandler().getStore().diskUsage();
+            if (session.isActive()) {
+                size += session.getDataHandler().getStore().diskUsage();
+            }
         }
 
         return android.text.format.Formatter.formatFileSize(SettingsActivity.this, size);
@@ -141,6 +146,11 @@ public class SettingsActivity extends MXCActionBarActivity {
     }
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        if (CommonActivityUtils.shouldRestartApp()) {
+            Log.e(LOG_TAG, "Restart the application.");
+            CommonActivityUtils.restartApp(this);
+        }
+
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_settings);
@@ -156,7 +166,7 @@ public class SettingsActivity extends MXCActionBarActivity {
             final MXSession fSession = session;
 
             LinearLayout profileLayout = (LinearLayout)getLayoutInflater().inflate(R.layout.account_section_settings, null);
-            mLinearLayoutBySession.put(session, profileLayout);
+            mLinearLayoutByMatrixId.put(session.getCredentials().userId, profileLayout);
 
             pos++;
             globalLayout.addView(profileLayout, pos);
@@ -167,7 +177,7 @@ public class SettingsActivity extends MXCActionBarActivity {
             avatarView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    mUpdatingSession = fSession;
+                    mUpdatingSessionId = fSession.getCredentials().userId;
                     Intent fileIntent = new Intent(Intent.ACTION_PICK);
                     fileIntent.setType("image/*");
                     startActivityForResult(fileIntent, REQUEST_IMAGE);
@@ -261,6 +271,8 @@ public class SettingsActivity extends MXCActionBarActivity {
         listenBoxUpdate(preferences, R.id.checkbox_sortByLastSeen, getString(R.string.settings_key_sort_by_last_seen), true);
         listenBoxUpdate(preferences, R.id.checkbox_displayLeftMembers, getString(R.string.settings_key_display_left_members), false);
         listenBoxUpdate(preferences, R.id.checkbox_displayPublicRooms, getString(R.string.settings_key_display_public_rooms_recents), true);
+        listenBoxUpdate(preferences, R.id.checkbox_rageshake, getString(R.string.settings_key_use_rage_shake), true);
+
 
         final Button clearCacheButton = (Button) findViewById(R.id.button_clear_cache);
 
@@ -307,6 +319,56 @@ public class SettingsActivity extends MXCActionBarActivity {
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
             public void onTextChanged(CharSequence s, int start, int before, int count) {}
         });
+
+        managePedingGCMregistration();
+    }
+
+    /**
+     * A GCM registration could be in progress.
+     * So disable the UI until the registration is done.
+     */
+    private void managePedingGCMregistration() {
+        GcmRegistrationManager gcmRegistrationManager = Matrix.getInstance(SettingsActivity.this).getSharedGcmRegistrationManager();
+
+        if (gcmRegistrationManager.isRegistrating()) {
+            final View gcmLayout = findViewById(R.id.gcm_layout);
+
+            gcmLayout.setEnabled(false);
+            gcmLayout.setAlpha(0.25f);
+
+            final GcmRegistrationManager.GcmSessionRegistration listener = new GcmRegistrationManager.GcmSessionRegistration() {
+                @Override
+                public void onSessionRegistred() {
+                    SettingsActivity.this.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            gcmLayout.setEnabled(true);
+                            gcmLayout.setAlpha(1.0f);
+                            refreshGCMEntries();
+
+                            CommonActivityUtils.onGcmUpdate(SettingsActivity.this);
+                        }
+                    });
+                }
+
+                @Override
+                public void onSessionRegistrationFailed() {
+                    onSessionRegistred();
+                }
+
+                @Override
+                public void onSessionUnregistred() {
+                    onSessionRegistred();
+                }
+
+                @Override
+                public void onSessionUnregistrationFailed() {
+                    onSessionRegistred();
+                }
+            };
+
+            gcmRegistrationManager.addSessionsRegistrationListener(listener);
+        }
     }
 
     private void listenBoxUpdate(final SharedPreferences preferences, final int boxId, final String preferenceKey, boolean defaultValue) {
@@ -333,11 +395,16 @@ public class SettingsActivity extends MXCActionBarActivity {
                             final GcmRegistrationManager.GcmSessionRegistration listener = new GcmRegistrationManager.GcmSessionRegistration() {
                                 @Override
                                 public void onSessionRegistred(){
-                                    gcmLayout.setEnabled(true);
-                                    gcmLayout.setAlpha(1.0f);
-                                    refreshGCMEntries();
+                                    SettingsActivity.this.runOnUiThread(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            gcmLayout.setEnabled(true);
+                                            gcmLayout.setAlpha(1.0f);
+                                            refreshGCMEntries();
 
-                                    CommonActivityUtils.onGcmUpdate(SettingsActivity.this);
+                                            CommonActivityUtils.onGcmUpdate(SettingsActivity.this);
+                                        }
+                                    });
                                 }
 
                                 @Override
@@ -367,12 +434,6 @@ public class SettingsActivity extends MXCActionBarActivity {
         );
     }
 
-    @Override
-    protected void onPause() {
-        super.onPause();
-        MyPresenceManager.advertiseAllUnavailableAfterDelay();
-    }
-
     private void refreshGCMEntries() {
         GcmRegistrationManager gcmRegistrationManager = Matrix.getInstance(this).getSharedGcmRegistrationManager();
 
@@ -391,13 +452,14 @@ public class SettingsActivity extends MXCActionBarActivity {
     @Override
     protected void onResume() {
         super.onResume();
+
         MyPresenceManager.advertiseAllOnline();
 
         for(MXSession session : Matrix.getMXSessions(this)) {
             final MyUser myUser = session.getMyUser();
             final MXSession fSession = session;
 
-            final LinearLayout linearLayout = mLinearLayoutBySession.get(fSession);
+            final LinearLayout linearLayout = mLinearLayoutByMatrixId.get(fSession.getCredentials().userId);
 
             final View refreshingView = linearLayout.findViewById(R.id.profile_mask);
             refreshingView.setVisibility(View.VISIBLE);
@@ -416,7 +478,7 @@ public class SettingsActivity extends MXCActionBarActivity {
                         @Override
                         public void onSuccess(String avatarUrl) {
                             if ((null != avatarUrl) && !avatarUrl.equals(myUser.avatarUrl)) {
-                                mTmpThumbnailUriBySession.remove(fSession);
+                                mTmpThumbnailUriByMatrixId.remove(fSession.getCredentials().userId);
 
                                 myUser.avatarUrl = avatarUrl;
                                 refreshProfileThumbnail(fSession, linearLayout);
@@ -445,47 +507,66 @@ public class SettingsActivity extends MXCActionBarActivity {
                 this.runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        mTmpThumbnailUriBySession.put(mUpdatingSession, data.getData());
+                        final LinearLayout linearLayout = mLinearLayoutByMatrixId.get(mUpdatingSessionId);
 
-                        final LinearLayout linearLayout = mLinearLayoutBySession.get(mUpdatingSession);
-                        ImageView avatarView = (ImageView) linearLayout.findViewById(R.id.imageView_avatar);
+                        // sanity checks
+                        if (null != linearLayout) {
+                            ImageView avatarView = (ImageView) linearLayout.findViewById(R.id.imageView_avatar);
 
-                        Uri imageUri = data.getData();
+                            Uri imageUri = data.getData();
+                            Bitmap thumbnailBitmap = null;
+                            Uri scaledImageUri = data.getData();
 
-                        // try to get the gallery thumbnail to save memory
-                        Bitmap thumbnailBitmap = null;
+                            try {
+                                ResourceUtils.Resource resource = ResourceUtils.openResource(SettingsActivity.this, imageUri);
 
-                        try {
-                            ContentResolver resolver = getContentResolver();
+                                // with jpg files
+                                // check exif parameter and reduce image size
+                                if ("image/jpg".equals(resource.mimeType) || "image/jpeg".equals(resource.mimeType)) {
+                                    InputStream stream = resource.contentStream;
+                                    int rotationAngle = ImageUtils
+                                            .getRotationAngleForBitmap(SettingsActivity.this, imageUri);
 
-                            List uriPath = imageUri.getPathSegments();
-                            long imageId = -1;
-                            String lastSegment = (String) uriPath.get(uriPath.size() - 1);
+                                    String mediaUrl = ImageUtils.scaleAndRotateImage(SettingsActivity.this, stream, resource.mimeType, 1024, rotationAngle, SettingsActivity.this.mMediasCache);
+                                    scaledImageUri = Uri.parse(mediaUrl);
+                                } else {
+                                    ContentResolver resolver = getContentResolver();
 
-                            // > Kitkat
-                            if (lastSegment.startsWith("image:")) {
-                                lastSegment = lastSegment.substring("image:".length());
+                                    List uriPath = imageUri.getPathSegments();
+                                    long imageId = -1;
+                                    String lastSegment = (String) uriPath.get(uriPath.size() - 1);
+
+                                    // > Kitkat
+                                    if (lastSegment.startsWith("image:")) {
+                                        lastSegment = lastSegment.substring("image:".length());
+                                    }
+
+                                    imageId = Long.parseLong(lastSegment);
+                                    thumbnailBitmap = MediaStore.Images.Thumbnails.getThumbnail(resolver, imageId, MediaStore.Images.Thumbnails.MINI_KIND, null);
+                                }
+
+                                resource.contentStream.close();
+
+                            } catch (Exception e) {
+                                Log.e(LOG_TAG, "MediaStore.Images.Thumbnails.getThumbnail " + e.getMessage());
                             }
 
-                            imageId = Long.parseLong(lastSegment);
-                            thumbnailBitmap = MediaStore.Images.Thumbnails.getThumbnail(resolver, imageId, MediaStore.Images.Thumbnails.MINI_KIND, null);
-                        } catch (Exception e) {
-                            Log.e(LOG_TAG, "MediaStore.Images.Thumbnails.getThumbnail " + e.getMessage());
-                        }
+                            if (null != thumbnailBitmap) {
+                                avatarView.setImageBitmap(thumbnailBitmap);
+                            } else {
+                                avatarView.setImageURI(scaledImageUri);
+                            }
 
-                        if (null != thumbnailBitmap) {
-                            avatarView.setImageBitmap(thumbnailBitmap);
-                        } else {
-                            avatarView.setImageURI(imageUri);
-                        }
+                            mTmpThumbnailUriByMatrixId.put(mUpdatingSessionId, scaledImageUri);
 
-                        final Button saveButton = (Button) linearLayout.findViewById(R.id.button_save);
-                        saveButton.setEnabled(true); // Enable the save button if it wasn't already
+                            final Button saveButton = (Button) linearLayout.findViewById(R.id.button_save);
+                            saveButton.setEnabled(true); // Enable the save button if it wasn't already
+                        }
                     }
                 });
             }
 
-            mUpdatingSession = null;
+            mUpdatingSessionId = null;
         }
     }
 
@@ -524,17 +605,34 @@ public class SettingsActivity extends MXCActionBarActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    private void saveChanges(final MXSession session) {
-        LinearLayout linearLayout = mLinearLayoutBySession.get(session);
+    /**
+     * Return the edited username for a dedicated session.
+     * @param session the session
+     * @return the edited text
+     */
+    private String getEditedUserName(final MXSession session) {
+        LinearLayout linearLayout = mLinearLayoutByMatrixId.get(session.getCredentials().userId);
         EditText displayNameEditText = (EditText) linearLayout.findViewById(R.id.editText_displayName);
 
-        // Save things
-        final String nameFromForm = displayNameEditText.getText().toString();
+        if (!TextUtils.isEmpty(displayNameEditText.getText())) {
+            // trim the text to avoid trailing /n after a c+p
+            return displayNameEditText.getText().toString().trim();
+        }
 
+        return "";
+    }
+
+    private void saveChanges(final MXSession session) {
+        LinearLayout linearLayout = mLinearLayoutByMatrixId.get(session.getCredentials().userId);
+
+        final String nameFromForm = getEditedUserName(session);
         final ApiCallback<Void> changeCallback = UIUtils.buildOnChangeCallback(this);
 
         final MyUser myUser = session.getMyUser();
         final Button saveButton = (Button) linearLayout.findViewById(R.id.button_save);
+
+        // disable the save button to avoid unexpected behaviour
+        saveButton.setEnabled(false);
 
         if (UIUtils.hasFieldChanged(myUser.displayname, nameFromForm)) {
             myUser.updateDisplayName(nameFromForm, new SimpleApiCallback<Void>(changeCallback) {
@@ -546,7 +644,7 @@ public class SettingsActivity extends MXCActionBarActivity {
             });
         }
 
-        Uri newAvatarUri = mTmpThumbnailUriBySession.get(session);
+        Uri newAvatarUri = mTmpThumbnailUriByMatrixId.get(session.getCredentials().userId);
 
         if (newAvatarUri != null) {
             Log.d(LOG_TAG, "Selected image to upload: " + newAvatarUri);
@@ -580,7 +678,7 @@ public class SettingsActivity extends MXCActionBarActivity {
                             public void onSuccess(Void info) {
                                 super.onSuccess(info);
                                 // Reset this because its being set is how we know there's been a change
-                                mTmpThumbnailUriBySession.remove(session);
+                                mTmpThumbnailUriByMatrixId.remove(session.getCredentials().userId);
                                 updateSaveButton(saveButton);
                             }
                         });
@@ -601,19 +699,16 @@ public class SettingsActivity extends MXCActionBarActivity {
     }
 
     private boolean areChanges() {
-        if (mTmpThumbnailUriBySession.size() != 0) {
+        if (mTmpThumbnailUriByMatrixId.size() != 0) {
             return true;
         }
 
-        for(MXSession session : Matrix.getMXSessions(this)) {
-            LinearLayout linearLayout = mLinearLayoutBySession.get(session);
-            EditText displayNameEditText = (EditText) linearLayout.findViewById(R.id.editText_displayName);
+        Boolean res = false;
 
-           if (UIUtils.hasFieldChanged(session.getMyUser().displayname, displayNameEditText.getText().toString())) {
-               return true;
-           }
+        for(MXSession session : Matrix.getMXSessions(this)) {
+            res |= UIUtils.hasFieldChanged(session.getMyUser().displayname, getEditedUserName(session));
         }
 
-        return false;
+        return res;
     }
 }

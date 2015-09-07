@@ -14,8 +14,8 @@ android {
         applicationId "org.matrix.console"
         minSdkVersion 11
         targetSdkVersion 21
-        versionCode 8
-        versionName "0.4.3"
+        versionCode 9
+        versionName "0.4.4"
     }
 
     signingConfigs {
@@ -42,8 +42,8 @@ android {
     productFlavors {
         alpha {
             applicationId "org.matrix.androidsdk.alpha"
-            versionCode 8
-            versionName "0.4.3"
+            versionCode 9
+            versionName "0.4.4"
         }
     }
 
@@ -73,6 +73,7 @@ dependencies {
     compile 'com.google.code.gson:gson:2.3'
     compile 'com.squareup.okhttp:okhttp-urlconnection:2.0.0'
     compile 'com.squareup.okhttp:okhttp:2.0.0'
+    compile 'io.pristine:libjingle:9690@aar'
     compile(name: 'matrix-sdk', ext: 'aar')
 }
 
