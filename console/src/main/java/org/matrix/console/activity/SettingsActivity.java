@@ -506,56 +506,60 @@ public class SettingsActivity extends MXCActionBarActivity {
                     @Override
                     public void run() {
                         final LinearLayout linearLayout = mLinearLayoutBySession.get(mUpdatingSession);
-                        ImageView avatarView = (ImageView) linearLayout.findViewById(R.id.imageView_avatar);
 
-                        Uri imageUri = data.getData();
-                        Bitmap thumbnailBitmap = null;
-                        Uri scaledImageUri = data.getData();
+                        // sanity checks
+                        if (null != linearLayout) {
+                            ImageView avatarView = (ImageView) linearLayout.findViewById(R.id.imageView_avatar);
 
-                        try {
-                            ResourceUtils.Resource resource = ResourceUtils.openResource(SettingsActivity.this, imageUri);
+                            Uri imageUri = data.getData();
+                            Bitmap thumbnailBitmap = null;
+                            Uri scaledImageUri = data.getData();
 
-                            // with jpg files
-                            // check exif parameter and reduce image size
-                            if ("image/jpg".equals(resource.mimeType) || "image/jpeg".equals(resource.mimeType)) {
-                                InputStream stream = resource.contentStream;
-                                int rotationAngle = ImageUtils
-                                        .getRotationAngleForBitmap(SettingsActivity.this, imageUri);
+                            try {
+                                ResourceUtils.Resource resource = ResourceUtils.openResource(SettingsActivity.this, imageUri);
 
-                                String mediaUrl = ImageUtils.scaleAndRotateImage(SettingsActivity.this, stream, resource.mimeType, 1024, rotationAngle, SettingsActivity.this.mMediasCache);
-                                scaledImageUri = Uri.parse(mediaUrl);
-                            } else {
-                                ContentResolver resolver = getContentResolver();
+                                // with jpg files
+                                // check exif parameter and reduce image size
+                                if ("image/jpg".equals(resource.mimeType) || "image/jpeg".equals(resource.mimeType)) {
+                                    InputStream stream = resource.contentStream;
+                                    int rotationAngle = ImageUtils
+                                            .getRotationAngleForBitmap(SettingsActivity.this, imageUri);
 
-                                List uriPath = imageUri.getPathSegments();
-                                long imageId = -1;
-                                String lastSegment = (String) uriPath.get(uriPath.size() - 1);
+                                    String mediaUrl = ImageUtils.scaleAndRotateImage(SettingsActivity.this, stream, resource.mimeType, 1024, rotationAngle, SettingsActivity.this.mMediasCache);
+                                    scaledImageUri = Uri.parse(mediaUrl);
+                                } else {
+                                    ContentResolver resolver = getContentResolver();
 
-                                // > Kitkat
-                                if (lastSegment.startsWith("image:")) {
-                                    lastSegment = lastSegment.substring("image:".length());
+                                    List uriPath = imageUri.getPathSegments();
+                                    long imageId = -1;
+                                    String lastSegment = (String) uriPath.get(uriPath.size() - 1);
+
+                                    // > Kitkat
+                                    if (lastSegment.startsWith("image:")) {
+                                        lastSegment = lastSegment.substring("image:".length());
+                                    }
+
+                                    imageId = Long.parseLong(lastSegment);
+                                    thumbnailBitmap = MediaStore.Images.Thumbnails.getThumbnail(resolver, imageId, MediaStore.Images.Thumbnails.MINI_KIND, null);
                                 }
 
-                                imageId = Long.parseLong(lastSegment);
-                                thumbnailBitmap = MediaStore.Images.Thumbnails.getThumbnail(resolver, imageId, MediaStore.Images.Thumbnails.MINI_KIND, null);
+                                resource.contentStream.close();
+
+                            } catch (Exception e) {
+                                Log.e(LOG_TAG, "MediaStore.Images.Thumbnails.getThumbnail " + e.getMessage());
                             }
 
-                            resource.contentStream.close();
+                            if (null != thumbnailBitmap) {
+                                avatarView.setImageBitmap(thumbnailBitmap);
+                            } else {
+                                avatarView.setImageURI(scaledImageUri);
+                            }
 
-                        } catch (Exception e) {
-                            Log.e(LOG_TAG, "MediaStore.Images.Thumbnails.getThumbnail " + e.getMessage());
+                            mTmpThumbnailUriBySession.put(mUpdatingSession, scaledImageUri);
+
+                            final Button saveButton = (Button) linearLayout.findViewById(R.id.button_save);
+                            saveButton.setEnabled(true); // Enable the save button if it wasn't already
                         }
-
-                        if (null != thumbnailBitmap) {
-                            avatarView.setImageBitmap(thumbnailBitmap);
-                        } else{
-                            avatarView.setImageURI(scaledImageUri);
-                        }
-
-                        mTmpThumbnailUriBySession.put(mUpdatingSession, scaledImageUri);
-
-                        final Button saveButton = (Button) linearLayout.findViewById(R.id.button_save);
-                        saveButton.setEnabled(true); // Enable the save button if it wasn't already
                     }
                 });
             }
