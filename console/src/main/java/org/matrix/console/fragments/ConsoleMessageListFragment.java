@@ -183,7 +183,9 @@ public class ConsoleMessageListFragment extends MatrixMessageListFragment implem
 
         if (Event.EVENT_TYPE_STATE_ROOM_TOPIC.equals(messageRow.getEvent().type) ||
             Event.EVENT_TYPE_STATE_ROOM_MEMBER.equals(messageRow.getEvent().type) ||
-            Event.EVENT_TYPE_STATE_ROOM_NAME.equals(messageRow.getEvent().type)) {
+            Event.EVENT_TYPE_STATE_ROOM_NAME.equals(messageRow.getEvent().type) ||
+                Message.MSGTYPE_EMOTE.equals(message.msgtype)
+                ) {
 
             if (!messageRow.getEvent().userId.equals(getSession().getCredentials().userId)) {
                 textIds.add(R.string.paste_username);
