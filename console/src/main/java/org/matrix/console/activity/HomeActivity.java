@@ -21,6 +21,7 @@ import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -73,6 +74,7 @@ import org.matrix.console.R;
 import org.matrix.console.ViewedRoomTracker;
 import org.matrix.console.adapters.ConsoleRoomSummaryAdapter;
 import org.matrix.console.adapters.DrawerAdapter;
+import org.matrix.console.db.ConsoleContentProvider;
 import org.matrix.console.fragments.AccountsSelectionDialogFragment;
 import org.matrix.console.fragments.ContactsListDialogFragment;
 import org.matrix.console.fragments.RoomCreationDialogFragment;
@@ -80,6 +82,10 @@ import org.matrix.console.gcm.GcmRegistrationManager;
 import org.matrix.console.services.EventStreamService;
 import org.matrix.console.util.RageShake;
 
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -1349,6 +1355,54 @@ public class HomeActivity extends MXCActionBarActivity {
      * Display third party licenses
      */
     private void displayAbout() {
+        // build a local license file
+        InputStream inputStream = this.getResources().openRawResource(R.raw.all_licenses);
+        File cachedLicenseFile = new File(getFilesDir(), "Licenses.txt");
+
+        // remove any previously saved content
+        // because of the application update
+        if (cachedLicenseFile.exists()) {
+            cachedLicenseFile.delete();
+        }
+
+        // Copy source file to destination
+        FileOutputStream outputStream = null;
+        try {
+            if (!cachedLicenseFile.exists()) {
+                cachedLicenseFile.createNewFile();
+
+                outputStream = new FileOutputStream(cachedLicenseFile);
+
+                byte[] buffer = new byte[1024 * 10];
+                int len;
+                while ((len = inputStream.read(buffer)) != -1) {
+                    outputStream.write(buffer, 0, len);
+                }
+            }
+        } catch (Exception e) {
+        } finally {
+            // Close resources
+            try {
+                if (inputStream != null) inputStream.close();
+                if (outputStream != null) outputStream.close();
+            } catch (Exception e) {
+            }
+        }
+
+        cachedLicenseFile = new File(getFilesDir(), "Licenses.txt");
+
+        // fail to copy the file
+        if (!cachedLicenseFile.exists()) {
+            return;
+        }
+
+        // convert the file to content:// uri
+        Uri uri = ConsoleContentProvider.absolutePathToUri(this, cachedLicenseFile.getAbsolutePath());
+
+        if (null == uri) {
+            return;
+        }
+
 
         String message = "<div class=\"banner\"> <div class=\"l-page no-clear align-center\"> <h2 class=\"s-heading\">"+ getString(R.string.settings_title_config) + "</h2> </div> </div>";
 
@@ -1364,18 +1418,7 @@ public class HomeActivity extends MXCActionBarActivity {
         message += "<strong>matrixConsole version</strong> <br>" + versionName;
         message += "<p><strong>SDK version</strong> <br>" + versionName;
         message += "<div class=\"banner\"> <div class=\"l-page no-clear align-center\"> <h2 class=\"s-heading\">Third Party Library Licenses</h2> </div> </div>";
-
-        message +=  licenseLine("Pristine libjingle", "http://www.webrtc.org/license-rights/license");
-        message += "<p>";
-
-        message +=  licenseLine("Retrofit", "https://github.com/square/retrofit/blob/master/LICENSE.txt");
-        message += "<p>";
-
-        message +=  licenseLine("okhttp", "https://github.com/square/okhttp/blob/master/LICENSE.txt");
-        message += "<p>";
-
-        message +=  licenseLine("ShortcutBadger", "https://github.com/leolin310148/ShortcutBadger/blob/master/LICENSE");
-        message += "<p>";
+        message += "<a href=\"" + uri.toString() + "\">Licenses</a>";
 
         Spanned text = Html.fromHtml(message);
 
