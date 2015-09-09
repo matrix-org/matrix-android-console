@@ -20,13 +20,21 @@ import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageInfo;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.PowerManager;
 import android.support.v4.app.FragmentManager;
+import android.text.Html;
+import android.text.Spannable;
+import android.text.SpannableString;
+import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.TextWatcher;
+import android.text.method.LinkMovementMethod;
+import android.text.style.ForegroundColorSpan;
+import android.text.util.Linkify;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -37,6 +45,7 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.ExpandableListView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import org.matrix.androidsdk.MXSession;
@@ -128,6 +137,7 @@ public class HomeActivity extends MXCActionBarActivity {
             R.string.action_disconnect,
             R.string.action_logout,
             R.string.send_bug_report,
+            R.string.about,
     };
 
     // sliding menu
@@ -143,6 +153,7 @@ public class HomeActivity extends MXCActionBarActivity {
             R.drawable.ic_material_clear, // R.string.action_disconnect,
             R.drawable.ic_material_exit_to_app, // R.string.action_logout,
             R.drawable.ic_material_bug_report, // R.string.send_bug_report,
+            R.drawable.ic_menu_matrix_transparent, // R.string.about,
     };
 
     private HashMap<MXSession, MXEventListener> mListenersBySession = new HashMap<MXSession, MXEventListener>();
@@ -970,6 +981,8 @@ public class HomeActivity extends MXCActionBarActivity {
                     HomeActivity.this.addAccount();
                 } else if (id == R.drawable.ic_material_remove_circle_outline) {
                     HomeActivity.this.removeAccount();
+                } else if (id == R.drawable.ic_menu_matrix_transparent) {
+                    HomeActivity.this.displayAbout();
                 }
             }
         });
@@ -1325,5 +1338,55 @@ public class HomeActivity extends MXCActionBarActivity {
         });
 
         fragment.show(fm, TAG_FRAGMENT_ACCOUNT_SELECTION_DIALOG);
+    }
+
+
+    private String licenseLine(String title, String url) {
+        return "<strong>" + title + "</strong> <br><a href=\"" + url + "\">" + url + "/</a>";
+    }
+
+    /**
+     * Display third party licenses
+     */
+    private void displayAbout() {
+
+        String message = "<div class=\"banner\"> <div class=\"l-page no-clear align-center\"> <h2 class=\"s-heading\">"+ getString(R.string.settings_title_config) + "</h2> </div> </div>";
+
+
+        String versionName = "";
+        try {
+            PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
+            versionName = pInfo.versionName;
+        } catch (Exception e) {
+
+        }
+
+        message += "<strong>matrixConsole version</strong> <br>" + versionName;
+        message += "<p><strong>SDK version</strong> <br>" + versionName;
+        message += "<div class=\"banner\"> <div class=\"l-page no-clear align-center\"> <h2 class=\"s-heading\">Third Party Library Licenses</h2> </div> </div>";
+
+        message +=  licenseLine("Pristine libjingle", "http://www.webrtc.org/license-rights/license");
+        message += "<p>";
+
+        message +=  licenseLine("Retrofit", "https://github.com/square/retrofit/blob/master/LICENSE.txt");
+        message += "<p>";
+
+        message +=  licenseLine("okhttp", "https://github.com/square/okhttp/blob/master/LICENSE.txt");
+        message += "<p>";
+
+        message +=  licenseLine("ShortcutBadger", "https://github.com/leolin310148/ShortcutBadger/blob/master/LICENSE");
+        message += "<p>";
+
+        Spanned text = Html.fromHtml(message);
+
+        final AlertDialog dialog = new AlertDialog.Builder(this)
+                .setPositiveButton(android.R.string.ok, null)
+                .setMessage(text)
+                .setIcon(R.drawable.ic_menu_small_matrix_transparent)
+                .create();
+        dialog.show();
+
+        // allow link to be clickable
+        ((TextView)dialog.findViewById(android.R.id.message)).setMovementMethod(LinkMovementMethod.getInstance());
     }
 }
