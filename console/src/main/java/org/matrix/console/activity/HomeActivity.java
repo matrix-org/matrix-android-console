@@ -21,26 +21,25 @@ import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
-import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.PowerManager;
 import android.support.v4.app.FragmentManager;
 import android.text.Html;
+import android.text.Layout;
 import android.text.Spannable;
-import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.text.method.LinkMovementMethod;
-import android.text.style.ForegroundColorSpan;
-import android.text.util.Linkify;
+import android.text.style.URLSpan;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
@@ -82,10 +81,12 @@ import org.matrix.console.gcm.GcmRegistrationManager;
 import org.matrix.console.services.EventStreamService;
 import org.matrix.console.util.RageShake;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -129,6 +130,10 @@ public class HomeActivity extends MXCActionBarActivity {
     private boolean refreshOnChunkEnd = false;
 
     private MenuItem mCallMenuItem = null;
+
+    // about
+    private AlertDialog mMainAboutDialog = null;
+    private String mLicenseString = null;
 
     // sliding menu
     private final Integer[] mSlideMenuTitleIds = new Integer[]{
@@ -1346,56 +1351,96 @@ public class HomeActivity extends MXCActionBarActivity {
         fragment.show(fm, TAG_FRAGMENT_ACCOUNT_SELECTION_DIALOG);
     }
 
+    // trick to trap the clink on the Licenses link
+    class MovementCheck extends LinkMovementMethod {
+        @Override
+        public boolean onTouchEvent(TextView widget,
+                                    Spannable buffer, MotionEvent event ) {
+            int action = event.getAction();
 
-    private String licenseLine(String title, String url) {
-        return "<strong>" + title + "</strong> <br><a href=\"" + url + "\">" + url + "/</a>";
+            if (action == MotionEvent.ACTION_UP)
+            {
+                int x = (int) event.getX();
+                int y = (int) event.getY();
+
+                x -= widget.getTotalPaddingLeft();
+                y -= widget.getTotalPaddingTop();
+
+                x += widget.getScrollX();
+                y += widget.getScrollY();
+
+                Layout layout = widget.getLayout();
+                int line = layout.getLineForVertical(y);
+                int off = layout.getOffsetForHorizontal(line, x);
+
+                URLSpan[] link = buffer.getSpans(off, off, URLSpan.class);
+                if (link.length != 0)
+                {
+                    // display the license
+                    displayLicense();
+                    return true;
+                }
+            }
+
+            return super.onTouchEvent(widget, buffer, event);
+        }
+    }
+
+    /**
+     * Display the licenses text
+     */
+    private void displayLicense() {
+        if (null != mMainAboutDialog) {
+            mMainAboutDialog.dismiss();
+            mMainAboutDialog = null;
+        }
+
+        this.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                final AlertDialog dialog = new AlertDialog.Builder(HomeActivity.this)
+                        .setPositiveButton(android.R.string.ok, null)
+                        .setMessage(mLicenseString)
+                        .setTitle("Third Part licenses")
+                        .create();
+                dialog.show();
+            }
+        });
     }
 
     /**
      * Display third party licenses
      */
     private void displayAbout() {
-        // build a local license file
-        InputStream inputStream = this.getResources().openRawResource(R.raw.all_licenses);
-        File cachedLicenseFile = new File(getFilesDir(), "Licenses.txt");
 
-        // remove any previously saved content
-        // because of the application update
-        if (cachedLicenseFile.exists()) {
-            cachedLicenseFile.delete();
-        }
+        if (null == mLicenseString) {
+            // build a local license file
+            InputStream inputStream = this.getResources().openRawResource(R.raw.all_licenses);
+            StringBuilder buf = new StringBuilder();
 
-        // Copy source file to destination
-        FileOutputStream outputStream = null;
-        try {
-            if (!cachedLicenseFile.exists()) {
-                cachedLicenseFile.createNewFile();
-
-                outputStream = new FileOutputStream(cachedLicenseFile);
-
-                byte[] buffer = new byte[1024 * 10];
-                int len;
-                while ((len = inputStream.read(buffer)) != -1) {
-                    outputStream.write(buffer, 0, len);
-                }
-            }
-        } catch (Exception e) {
-        } finally {
-            // Close resources
             try {
-                if (inputStream != null) inputStream.close();
-                if (outputStream != null) outputStream.close();
+                String str;
+                BufferedReader in = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"));
+
+                while ((str = in.readLine()) != null) {
+                    buf.append(str);
+                    buf.append("\n");
+                }
+
+                in.close();
             } catch (Exception e) {
+
             }
+
+            mLicenseString = buf.toString();
         }
 
-        cachedLicenseFile = new File(getFilesDir(), "Licenses.txt");
-
-        // fail to copy the file
-        if (!cachedLicenseFile.exists()) {
+        // sanity check
+        if (null == mLicenseString) {
             return;
         }
 
+        File cachedLicenseFile = new File(getFilesDir(), "Licenses.txt");
         // convert the file to content:// uri
         Uri uri = ConsoleContentProvider.absolutePathToUri(this, cachedLicenseFile.getAbsolutePath());
 
@@ -1403,9 +1448,7 @@ public class HomeActivity extends MXCActionBarActivity {
             return;
         }
 
-
         String message = "<div class=\"banner\"> <div class=\"l-page no-clear align-center\"> <h2 class=\"s-heading\">"+ getString(R.string.settings_title_config) + "</h2> </div> </div>";
-
 
         String versionName = "";
         try {
@@ -1422,14 +1465,14 @@ public class HomeActivity extends MXCActionBarActivity {
 
         Spanned text = Html.fromHtml(message);
 
-        final AlertDialog dialog = new AlertDialog.Builder(this)
+        mMainAboutDialog = new AlertDialog.Builder(this)
                 .setPositiveButton(android.R.string.ok, null)
                 .setMessage(text)
                 .setIcon(R.drawable.ic_menu_small_matrix_transparent)
                 .create();
-        dialog.show();
+        mMainAboutDialog.show();
 
         // allow link to be clickable
-        ((TextView)dialog.findViewById(android.R.id.message)).setMovementMethod(LinkMovementMethod.getInstance());
+        ((TextView)mMainAboutDialog.findViewById(android.R.id.message)).setMovementMethod(new MovementCheck());
     }
 }
