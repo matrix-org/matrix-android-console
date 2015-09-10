@@ -1,4 +1,30 @@
 
+Changes in Console 0.4.4 (2015-09-07)
+===================================================
+
+Improvements:
+ * Add an about menu entry.
+ * Add an insert sender name when tapping on a room event.
+ * The application can be installed either in device memory or SD card.
+ * Add the enable /disable notifications per room.
+ * The room deletion is performed in the SDK.
+
+Features:
+ * Call.
+
+Bug fixes:
+ * The login page forces the portrait orientation only if no credentials have been entered.
+ * Add sanity checks to avoid application crashes.
+ * “Invite from other room” was broken.
+ * The GCM registration used to fail with long matrix ID.
+ * In some race conditions, the user profile was not properly updated.
+ * SYAND-94 presence and last seen on user page
+ * SYAND-95 Tap on displayname to insert into textbox as poor's man autocomplete.
+ * SYAND-97 - When swipping from left in a room an empty white space is displayed.
+ * SYAND-102 Accepted room invites not properly resolved.
+ * SYAND-109 Add a setting to enable/disable rageshake in the settings menu.
+ * many GA crashes.
+
 Changes in Console 0.4.3 (2015-07-07)
 ===================================================
 
