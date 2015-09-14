@@ -15,7 +15,7 @@ android {
         minSdkVersion 11
         targetSdkVersion 21
         versionCode 9
-        versionName "0.4.4"
+        versionName "0.5.0"
     }
 
     signingConfigs {
@@ -43,7 +43,7 @@ android {
         alpha {
             applicationId "org.matrix.androidsdk.alpha"
             versionCode 9
-            versionName "0.4.4"
+            versionName "0.5.0"
         }
     }
 
