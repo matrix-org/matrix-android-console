@@ -18,28 +18,26 @@ package org.matrix.console.adapters;
 
 import android.content.Context;
 import android.content.Intent;
-import android.media.ExifInterface;
-import android.widget.ArrayAdapter;
+import android.os.Handler;
+import android.os.Looper;
 
 import org.matrix.androidsdk.MXSession;
 import org.matrix.androidsdk.adapters.MessageRow;
 import org.matrix.androidsdk.adapters.MessagesAdapter;
 import org.matrix.androidsdk.db.MXMediasCache;
-import org.matrix.androidsdk.rest.model.Event;
 import org.matrix.androidsdk.rest.model.FileMessage;
 import org.matrix.androidsdk.rest.model.ImageMessage;
 import org.matrix.androidsdk.rest.model.Message;
+import org.matrix.androidsdk.rest.model.VideoMessage;
 import org.matrix.androidsdk.util.JsonUtils;
 import org.matrix.console.ConsoleApplication;
 import org.matrix.console.R;
 import org.matrix.console.activity.CommonActivityUtils;
 import org.matrix.console.activity.ImageSliderActivity;
-import org.matrix.console.activity.ImageWebViewActivity;
 import org.matrix.console.activity.MemberDetailsActivity;
 import org.matrix.console.util.SlidableImageInfo;
 
 import java.io.File;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 
 /**
@@ -57,11 +55,15 @@ public class ConsoleMessagesAdapter extends MessagesAdapter {
         public Boolean onDisplayNameClick(String userId, String displayName);
     }
 
+    private Handler mUiHandler;
     private MessageLongClickListener mLongClickListener = null;
     private AvatarClickListener mAvatarClickListener = null;
 
     public ConsoleMessagesAdapter(MXSession session, Context context, MXMediasCache mediasCache) {
         super(session, context, mediasCache);
+
+        // for dispatching data to add to the adapter we need to be on the main thread
+        mUiHandler = new Handler(Looper.getMainLooper());
     }
 
     public void setMessageLongClickListener(MessageLongClickListener listener) {
@@ -143,7 +145,6 @@ public class ConsoleMessagesAdapter extends MessagesAdapter {
      * @return the imageMessage position. -1 if not found.
      */
     private int getImageMessagePosition(ArrayList<SlidableImageInfo> listImageMessages, ImageMessage imageMessage) {
-
         for(int index = 0; index < listImageMessages.size(); index++) {
             if (listImageMessages.get(index).mImageUrl.equals(imageMessage.url)) {
                 return index;
@@ -194,7 +195,7 @@ public class ConsoleMessagesAdapter extends MessagesAdapter {
     }
 
     @Override
-         public void onFileClick(int position, FileMessage fileMessage) {
+    public void onFileClick(int position, FileMessage fileMessage) {
         if (null != fileMessage.url) {
             File mediaFile =  mMediasCache.mediaCacheFile(fileMessage.url, fileMessage.getMimeType());
 
@@ -210,6 +211,57 @@ public class ConsoleMessagesAdapter extends MessagesAdapter {
     public boolean onFileLongClick(int position, FileMessage fileMessage) {
         if (null != mLongClickListener) {
             mLongClickListener.onMessageLongClick(position, fileMessage);
+            return true;
+        }
+
+        return false;
+    }
+
+    @Override
+    public void onVideoClick(int position, VideoMessage videoMessage) {
+        if (null != videoMessage.url) {
+            File mediaFile =  mMediasCache.mediaCacheFile(videoMessage.url, videoMessage.getVideoMimeType());
+
+            // is the file already saved
+            if (null != mediaFile) {
+                String savedMediaPath = CommonActivityUtils.saveMediaIntoDownloads(mContext, mediaFile, videoMessage.body, videoMessage.getVideoMimeType());
+                CommonActivityUtils.openMedia(ConsoleApplication.getCurrentActivity(), savedMediaPath, videoMessage.getVideoMimeType());
+            } else {
+                final String downloadId = mMediasCache.downloadMedia(mContext, videoMessage.url, videoMessage.getVideoMimeType());
+                final VideoMessage fVideoMessage = videoMessage;
+                final int fPosition = position;
+
+                mMediasCache.addDownloadListener(downloadId, new MXMediasCache.DownloadCallback() {
+                    @Override
+                    public void onDownloadStart(String aDownloadId) {
+                        if (downloadId.equals(aDownloadId)) {
+                            mUiHandler.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    ConsoleMessagesAdapter.this.notifyDataSetChanged();
+                                }
+                            });
+                        }
+                    }
+
+                    @Override
+                    public void onDownloadProgress(String aDownloadId, int percentageProgress) {
+                    }
+
+                    @Override
+                    public void onDownloadComplete(String aDownloadId) {
+                        if (aDownloadId.equals(downloadId)) {
+                            onVideoClick(fPosition, fVideoMessage);
+                        }
+                    }
+                });
+            }
+        }
+    }
+
+    public boolean onVideoLongClick(int position, VideoMessage videoMessage) {
+        if (null != mLongClickListener) {
+            mLongClickListener.onMessageLongClick(position, videoMessage);
             return true;
         }
 

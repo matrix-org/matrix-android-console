@@ -25,7 +25,7 @@ public class SlidableImageInfo implements Serializable {
     public int mOrientation = 0;
     public String mMimeType = null;
 
-    // default costructor
+    // default constructor
     public SlidableImageInfo() {
 
     }
