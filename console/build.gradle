@@ -14,7 +14,7 @@ android {
         applicationId "org.matrix.console"
         minSdkVersion 11
         targetSdkVersion 21
-        versionCode 11
+        versionCode 12
         versionName "0.5.0"
     }
 
@@ -42,7 +42,7 @@ android {
     productFlavors {
         alpha {
             applicationId "org.matrix.androidsdk.alpha"
-            versionCode 11
+            versionCode 12
             versionName "0.5.0"
         }
     }
