@@ -126,6 +126,9 @@ public class RoomActivity extends MXCActionBarActivity {
     private static final String PENDING_MEDIA_URL = "PENDING_MEDIA_URL";
     private static final String PENDING_MIMETYPE = "PENDING_MIMETYPE";
     private static final String PENDING_FILENAME = "PENDING_FILENAME";
+
+    private static final String LATEST_CAMERA_URI = "LATEST_CAMERA_UI";
+
     private static final String FIRST_VISIBLE_ROW = "FIRST_VISIBLE_ROW";
 
     private static final String CAMERA_VALUE_TITLE = "attachment"; // Samsung devices need a filepath to write to or else won't return a Uri (!!!)
@@ -328,7 +331,7 @@ public class RoomActivity extends MXCActionBarActivity {
         } else {
             Log.d(LOG_TAG, "trying to take a photo with no predefined uri");
         }
-        
+
         // Store the dummy URI which will be set to a placeholder location. When all is lost on samsung devices,
         // this will point to the data we're looking for.
         // Because Activities tend to use a single MediaProvider for all their intents, this field will only be the
@@ -394,18 +397,27 @@ public class RoomActivity extends MXCActionBarActivity {
         if (null != savedInstanceState) {
             if (savedInstanceState.containsKey(PENDING_THUMBNAIL_URL)) {
                 mPendingThumbnailUrl = savedInstanceState.getString(PENDING_THUMBNAIL_URL);
+                Log.d(LOG_TAG, "Restore mPendingThumbnailUrl " +  mPendingThumbnailUrl);
             }
 
             if (savedInstanceState.containsKey(PENDING_MEDIA_URL)) {
                 mPendingMediaUrl = savedInstanceState.getString(PENDING_MEDIA_URL);
+                Log.d(LOG_TAG, "Restore mPendingMediaUrl " +  mPendingMediaUrl);
             }
 
             if (savedInstanceState.containsKey(PENDING_MIMETYPE)) {
                 mPendingMimeType = savedInstanceState.getString(PENDING_MIMETYPE);
+                Log.d(LOG_TAG, "Restore mPendingMimeType " +  mPendingMimeType);
             }
 
             if (savedInstanceState.containsKey(PENDING_FILENAME)) {
                 mPendingFilename = savedInstanceState.getString(PENDING_FILENAME);
+                Log.d(LOG_TAG, "Restore mPendingFilename " +  mPendingFilename);
+            }
+
+            if (savedInstanceState.containsKey(LATEST_CAMERA_URI)) {
+                mLatestTakePictureCameraUri = savedInstanceState.getString(PENDING_FILENAME);
+                Log.d(LOG_TAG, "Restore mLatestTakePictureCameraUri " +  mLatestTakePictureCameraUri);
             }
         }
 
@@ -755,18 +767,27 @@ public class RoomActivity extends MXCActionBarActivity {
 
         if (null != mPendingThumbnailUrl) {
             savedInstanceState.putString(PENDING_THUMBNAIL_URL, mPendingThumbnailUrl);
+            Log.d(LOG_TAG, "onSaveInstanceState mPendingThumbnailUrl " + mPendingThumbnailUrl);
         }
 
         if (null != mPendingMediaUrl) {
             savedInstanceState.putString(PENDING_MEDIA_URL, mPendingMediaUrl);
+            Log.d(LOG_TAG, "onSaveInstanceState mPendingMediaUrl " + mPendingMediaUrl);
         }
 
         if (null != mPendingMimeType) {
             savedInstanceState.putString(PENDING_MIMETYPE, mPendingMimeType);
+            Log.d(LOG_TAG, "onSaveInstanceState mPendingMimeType " + mPendingMimeType);
         }
 
         if (null != mPendingFilename) {
             savedInstanceState.putString(PENDING_FILENAME, mPendingFilename);
+            Log.d(LOG_TAG, "onSaveInstanceState mPendingFilename " + mPendingFilename);
+        }
+
+        if (null != mLatestTakePictureCameraUri) {
+            savedInstanceState.putString(LATEST_CAMERA_URI, mLatestTakePictureCameraUri);
+            Log.d(LOG_TAG, "onSaveInstanceState mLatestTakePictureCameraUri " + mLatestTakePictureCameraUri);
         }
 
         savedInstanceState.putInt(FIRST_VISIBLE_ROW, mConsoleMessageListFragment.mMessageListView.getFirstVisiblePosition());
@@ -1619,6 +1640,11 @@ public class RoomActivity extends MXCActionBarActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, final Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        Log.d(LOG_TAG, "onActivityResult requestCode " + resultCode + " for " + requestCode + " with " + data);
+
+        if (requestCode == TAKE_IMAGE) {
+            Log.d(LOG_TAG, "onActivityResult mLatestTakePictureCameraUri " + mLatestTakePictureCameraUri);
+        }
 
         if (resultCode == RESULT_OK) {
             if ((requestCode == REQUEST_FILES) || (requestCode == TAKE_IMAGE)) {
