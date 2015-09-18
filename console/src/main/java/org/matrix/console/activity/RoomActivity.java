@@ -1607,6 +1607,8 @@ public class RoomActivity extends MXCActionBarActivity {
                 Uri currentUri = data.getData();
                 writeMediaUrl(currentUri);
             }
+        } else {
+            Log.e(LOG_TAG, "onActivityResult fails " + resultCode + " for " + requestCode + " with " + data);
         }
 
         if (requestCode == CREATE_DOCUMENT) {
