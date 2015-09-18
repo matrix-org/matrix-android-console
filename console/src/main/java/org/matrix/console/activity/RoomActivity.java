@@ -284,7 +284,7 @@ public class RoomActivity extends MXCActionBarActivity {
      * Launch the camera
      */
     private void launchCamera() {
-        Intent captureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        final Intent captureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
 
         // the following is a fix for buggy 2.x devices
         Date date = new Date();
@@ -298,22 +298,37 @@ public class RoomActivity extends MXCActionBarActivity {
         Uri dummyUri = null;
         try {
             dummyUri = RoomActivity.this.getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+
+            if (null == dummyUri) {
+                Log.e(LOG_TAG, "Cannot use the external storage media to save image");
+            }
         }
         catch (UnsupportedOperationException uoe) {
             Log.e(LOG_TAG, "Unable to insert camera URI into MediaStore.Images.Media.EXTERNAL_CONTENT_URI - no SD card? Attempting to insert into device storage.");
-            try {
-                dummyUri = RoomActivity.this.getContentResolver().insert(MediaStore.Images.Media.INTERNAL_CONTENT_URI, values);
-            }
-            catch (Exception e) {
-                Log.e(LOG_TAG, "Unable to insert camera URI into internal storage. Giving up. "+e);
-            }
         }
         catch (Exception e) {
             Log.e(LOG_TAG, "Unable to insert camera URI into MediaStore.Images.Media.EXTERNAL_CONTENT_URI. "+e);
         }
+
+        if (null == dummyUri) {
+            try {
+                dummyUri = RoomActivity.this.getContentResolver().insert(MediaStore.Images.Media.INTERNAL_CONTENT_URI, values);
+                if (null == dummyUri) {
+                    Log.e(LOG_TAG, "Cannot use the internal storage to save media to save image");
+                }
+
+            } catch (Exception e) {
+                Log.e(LOG_TAG, "Unable to insert camera URI into internal storage. Giving up. " + e);
+            }
+        }
+
         if (dummyUri != null) {
             captureIntent.putExtra(MediaStore.EXTRA_OUTPUT, dummyUri);
+            Log.d(LOG_TAG, "trying to take a photo on " + dummyUri.toString());
+        } else {
+            Log.d(LOG_TAG, "trying to take a photo with no predefined uri");
         }
+        
         // Store the dummy URI which will be set to a placeholder location. When all is lost on samsung devices,
         // this will point to the data we're looking for.
         // Because Activities tend to use a single MediaProvider for all their intents, this field will only be the
@@ -321,7 +336,12 @@ public class RoomActivity extends MXCActionBarActivity {
         // fire it, meaning onActivityResult/getUri will be the next thing called, not another createIntentFor.
         RoomActivity.this.mLatestTakePictureCameraUri = dummyUri == null ? null : dummyUri.toString();
 
-        startActivityForResult(captureIntent, TAKE_IMAGE);
+        RoomActivity.this.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                startActivityForResult(captureIntent, TAKE_IMAGE);
+            }
+        });
     }
 
     private class ImageSize {
