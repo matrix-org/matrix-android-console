@@ -127,8 +127,6 @@ public class RoomActivity extends MXCActionBarActivity {
     private static final String PENDING_MIMETYPE = "PENDING_MIMETYPE";
     private static final String PENDING_FILENAME = "PENDING_FILENAME";
 
-    private static final String LATEST_CAMERA_URI = "LATEST_CAMERA_UI";
-
     private static final String FIRST_VISIBLE_ROW = "FIRST_VISIBLE_ROW";
 
     private static final String CAMERA_VALUE_TITLE = "attachment"; // Samsung devices need a filepath to write to or else won't return a Uri (!!!)
@@ -184,7 +182,7 @@ public class RoomActivity extends MXCActionBarActivity {
 
     private String mCallId = null;
 
-    private String mLatestTakePictureCameraUri; // has to be String not Uri because of Serializable
+    private static String mLatestTakePictureCameraUri = null; // has to be String not Uri because of Serializable
 
     // typing event management
     private Timer mTypingTimer = null;
@@ -413,11 +411,6 @@ public class RoomActivity extends MXCActionBarActivity {
             if (savedInstanceState.containsKey(PENDING_FILENAME)) {
                 mPendingFilename = savedInstanceState.getString(PENDING_FILENAME);
                 Log.d(LOG_TAG, "Restore mPendingFilename " +  mPendingFilename);
-            }
-
-            if (savedInstanceState.containsKey(LATEST_CAMERA_URI)) {
-                mLatestTakePictureCameraUri = savedInstanceState.getString(PENDING_FILENAME);
-                Log.d(LOG_TAG, "Restore mLatestTakePictureCameraUri " +  mLatestTakePictureCameraUri);
             }
         }
 
@@ -783,11 +776,6 @@ public class RoomActivity extends MXCActionBarActivity {
         if (null != mPendingFilename) {
             savedInstanceState.putString(PENDING_FILENAME, mPendingFilename);
             Log.d(LOG_TAG, "onSaveInstanceState mPendingFilename " + mPendingFilename);
-        }
-
-        if (null != mLatestTakePictureCameraUri) {
-            savedInstanceState.putString(LATEST_CAMERA_URI, mLatestTakePictureCameraUri);
-            Log.d(LOG_TAG, "onSaveInstanceState mLatestTakePictureCameraUri " + mLatestTakePictureCameraUri);
         }
 
         savedInstanceState.putInt(FIRST_VISIBLE_ROW, mConsoleMessageListFragment.mMessageListView.getFirstVisiblePosition());
