@@ -55,7 +55,7 @@ public class ConsoleApplication extends Application {
 
     private Timer mActivityTransitionTimer;
     private TimerTask mActivityTransitionTimerTask;
-    public boolean isInBackground = true;
+    private boolean mIsInBackground = true;
     private final long MAX_ACTIVITY_TRANSITION_TIME_MS = 2000;
 
     // google analytics
@@ -83,7 +83,7 @@ public class ConsoleApplication extends Application {
         }
         catch (PackageManager.NameNotFoundException e) {}
 
-        LogUtilities.setLogDirectory(new File(getCacheDir().getAbsolutePath()+"/logs"));
+        LogUtilities.setLogDirectory(new File(getCacheDir().getAbsolutePath() + "/logs"));
         LogUtilities.storeLogcat();
 
         initGoogleAnalytics();
@@ -93,8 +93,6 @@ public class ConsoleApplication extends Application {
 
         // get the contact update at application launch
         ContactsManager.refreshLocalContactsSnapshot(this);
-
-        isInBackground = false;
     }
 
     public static ConsoleApplication getInstance() {
@@ -120,7 +118,7 @@ public class ConsoleApplication extends Application {
      * The application is warned that a call is ended.
      */
     public void onCallEnd() {
-        if (isInBackground && mIsCallingInBackground) {
+        if (isAppInBackground() && mIsCallingInBackground) {
             Log.d(LOG_TAG, "onCallEnd : Suspend the events thread because the call was ended whereas the application was in background");
             suspendApp();
         }
@@ -128,7 +126,7 @@ public class ConsoleApplication extends Application {
         mIsCallingInBackground = false;
     }
 
-    public void startActivityTransitionTimer() {
+    private void startActivityTransitionTimer() {
         // reset the application badge when displaying a new activity
         // when the user taps on a notification, it is the first called method.
         CommonActivityUtils.updateUnreadMessagesBadge(this, 0);
@@ -136,17 +134,19 @@ public class ConsoleApplication extends Application {
         this.mActivityTransitionTimer = new Timer();
         this.mActivityTransitionTimerTask = new TimerTask() {
             public void run() {
-                if (ConsoleApplication.this.mActivityTransitionTimerTask != null) {
-                    ConsoleApplication.this.mActivityTransitionTimerTask.cancel();
-                    ConsoleApplication.this.mActivityTransitionTimerTask = null;
+                ConsoleApplication theApp = ConsoleApplication.this;
+
+                if (theApp.mActivityTransitionTimerTask != null) {
+                    theApp.mActivityTransitionTimerTask.cancel();
+                    theApp.mActivityTransitionTimerTask = null;
                 }
 
-                if (ConsoleApplication.this.mActivityTransitionTimer != null) {
-                    ConsoleApplication.this.mActivityTransitionTimer.cancel();
-                    ConsoleApplication.this.mActivityTransitionTimer = null;
+                if (theApp.mActivityTransitionTimer != null) {
+                    theApp.mActivityTransitionTimer.cancel();
+                    theApp.mActivityTransitionTimer = null;
                 }
 
-                ConsoleApplication.this.isInBackground = true;
+                theApp.mIsInBackground = true;
                 mIsCallingInBackground = (null != CallViewActivity.getActiveCall());
 
                 // if there is a pending call
@@ -161,7 +161,7 @@ public class ConsoleApplication extends Application {
         this.mActivityTransitionTimer.schedule(mActivityTransitionTimerTask, MAX_ACTIVITY_TRANSITION_TIME_MS);
     }
 
-    public void stopActivityTransitionTimer() {
+    private void stopActivityTransitionTimer() {
         if (this.mActivityTransitionTimerTask != null) {
             this.mActivityTransitionTimerTask.cancel();
             this.mActivityTransitionTimerTask = null;
@@ -172,7 +172,7 @@ public class ConsoleApplication extends Application {
             this.mActivityTransitionTimer = null;
         }
 
-        if (isInBackground && !mIsCallingInBackground) {
+        if (isAppInBackground() && !mIsCallingInBackground) {
             // resume the events thread if the client uses GCM
             if (Matrix.getInstance(ConsoleApplication.this).getSharedGcmRegistrationManager().useGCM()) {
 
@@ -191,11 +191,21 @@ public class ConsoleApplication extends Application {
         MyPresenceManager.advertiseAllOnline();
 
         this.mIsCallingInBackground = false;
-        this.isInBackground = false;
+        this.mIsInBackground = false;
     }
 
     static private Activity mCurrentActivity = null;
     public static void setCurrentActivity(Activity activity) {
+
+        // wait 2s to check that the application is put in background
+        if (null != getInstance()) {
+            if (null == activity) {
+                getInstance().startActivityTransitionTimer();
+            } else {
+                getInstance().stopActivityTransitionTimer();
+            }
+        }
+
         mCurrentActivity = activity;
     }
     public static Activity getCurrentActivity() { return mCurrentActivity; }
@@ -204,11 +214,7 @@ public class ConsoleApplication extends Application {
      * Return true if the application is in background.
      */
     public static boolean isAppInBackground() {
-        if (mCurrentActivity != null) {
-            return ((ConsoleApplication)(mCurrentActivity.getApplication())).isInBackground;
-        }
-
-        return true;
+     	return (null == mCurrentActivity) && (null != getInstance()) && getInstance().mIsInBackground;
     }
 
     private void initGoogleAnalytics() {

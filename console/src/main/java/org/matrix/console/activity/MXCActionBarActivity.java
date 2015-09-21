@@ -126,8 +126,6 @@ public class MXCActionBarActivity extends ActionBarActivity {
         super.onPause();
         ConsoleApplication.setCurrentActivity(null);
 
-        ((ConsoleApplication)getApplication()).startActivityTransitionTimer();
-
         // close any opened dialog
         FragmentManager fm = getSupportFragmentManager();
         java.util.List<android.support.v4.app.Fragment> fragments = fm.getFragments();
@@ -144,8 +142,6 @@ public class MXCActionBarActivity extends ActionBarActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        ConsoleApplication.setCurrentActivity(this);
-
         // refresh the push rules when debackgrounding the application
         if (ConsoleApplication.isAppInBackground()) {
             Matrix matrixInstance =  Matrix.getInstance(getApplicationContext());
@@ -158,7 +154,7 @@ public class MXCActionBarActivity extends ActionBarActivity {
             EventStreamService.cancelNotificationsForRoomId(null);
         }
 
-        ((ConsoleApplication)getApplication()).stopActivityTransitionTimer();
+        ConsoleApplication.setCurrentActivity(this);
     }
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {

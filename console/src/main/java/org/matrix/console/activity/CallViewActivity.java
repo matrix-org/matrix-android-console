@@ -373,7 +373,7 @@ public class CallViewActivity extends FragmentActivity {
             mCall.removeListener(mListener);
         }
         ConsoleApplication.setCurrentActivity(null);
-        ((ConsoleApplication)getApplication()).startActivityTransitionTimer();
+
     }
 
     @Override
@@ -391,7 +391,6 @@ public class CallViewActivity extends FragmentActivity {
         }
 
         ConsoleApplication.setCurrentActivity(this);
-        ((ConsoleApplication)getApplication()).stopActivityTransitionTimer();
     }
 
     private void refreshSpeakerButton() {
