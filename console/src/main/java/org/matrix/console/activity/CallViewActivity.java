@@ -360,6 +360,7 @@ public class CallViewActivity extends FragmentActivity {
     @Override
     public void finish() {
         super.finish();
+        stopRinging();
         instance = null;
     }
 
