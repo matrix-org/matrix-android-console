@@ -114,6 +114,7 @@
 
     <string name="option_send_files">Send files</string>
     <string name="option_take_photo">Take photo</string>
+    <string name="option_take_video">Take video</string>
     <string name="option_attach_video">Attach video</string>
 
     <!-- Login Screen -->
