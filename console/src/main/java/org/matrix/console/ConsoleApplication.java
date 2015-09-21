@@ -117,9 +117,10 @@ public class ConsoleApplication extends Application {
      */
     public void onCallEnd() {
         if (isInBackground && mIsCallingInBackground) {
-            mIsCallingInBackground = false;
             suspendApp();
         }
+
+        mIsCallingInBackground = false;
     }
 
     public void startActivityTransitionTimer() {
@@ -172,6 +173,7 @@ public class ConsoleApplication extends Application {
 
         MyPresenceManager.advertiseAllOnline();
 
+        this.mIsCallingInBackground = false;
         this.isInBackground = false;
     }
 
