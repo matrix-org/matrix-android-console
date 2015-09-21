@@ -32,8 +32,10 @@ import com.google.android.gms.analytics.GoogleAnalytics;
 import com.google.android.gms.analytics.HitBuilders;
 import com.google.android.gms.analytics.Tracker;
 
+import org.matrix.androidsdk.rest.model.LocationMessage;
 import org.matrix.console.activity.CallViewActivity;
 import org.matrix.console.activity.CommonActivityUtils;
+import org.matrix.console.adapters.ConsoleMessagesAdapter;
 import org.matrix.console.contacts.ContactsManager;
 import org.matrix.console.contacts.PIDsRetriever;
 import org.matrix.console.ga.Analytics;
@@ -103,6 +105,8 @@ public class ConsoleApplication extends Application {
      * Suspend background threads.
      */
     private void suspendApp() {
+        Log.d(LOG_TAG, "SuspendApp");
+
         // suspend the events thread if the client uses GCM
         if (Matrix.getInstance(ConsoleApplication.this).getSharedGcmRegistrationManager().useGCM()) {
             CommonActivityUtils.pauseEventStream(ConsoleApplication.this);
@@ -117,6 +121,7 @@ public class ConsoleApplication extends Application {
      */
     public void onCallEnd() {
         if (isInBackground && mIsCallingInBackground) {
+            Log.d(LOG_TAG, "onCallEnd : Suspend the events thread because the call was ended whereas the application was in background");
             suspendApp();
         }
 
@@ -124,7 +129,6 @@ public class ConsoleApplication extends Application {
     }
 
     public void startActivityTransitionTimer() {
-
         // reset the application badge when displaying a new activity
         // when the user taps on a notification, it is the first called method.
         CommonActivityUtils.updateUnreadMessagesBadge(this, 0);
@@ -132,12 +136,23 @@ public class ConsoleApplication extends Application {
         this.mActivityTransitionTimer = new Timer();
         this.mActivityTransitionTimerTask = new TimerTask() {
             public void run() {
+                if (ConsoleApplication.this.mActivityTransitionTimerTask != null) {
+                    ConsoleApplication.this.mActivityTransitionTimerTask.cancel();
+                    ConsoleApplication.this.mActivityTransitionTimerTask = null;
+                }
+
+                if (ConsoleApplication.this.mActivityTransitionTimer != null) {
+                    ConsoleApplication.this.mActivityTransitionTimer.cancel();
+                    ConsoleApplication.this.mActivityTransitionTimer = null;
+                }
+
                 ConsoleApplication.this.isInBackground = true;
                 mIsCallingInBackground = (null != CallViewActivity.getActiveCall());
 
                 // if there is a pending call
                 // the application is not suspended
                 if (!mIsCallingInBackground) {
+                    Log.d(LOG_TAG, "Suspend the application because there was no resumed activity within 2 seconds");
                     suspendApp();
                 }
             }
@@ -149,10 +164,12 @@ public class ConsoleApplication extends Application {
     public void stopActivityTransitionTimer() {
         if (this.mActivityTransitionTimerTask != null) {
             this.mActivityTransitionTimerTask.cancel();
+            this.mActivityTransitionTimerTask = null;
         }
 
         if (this.mActivityTransitionTimer != null) {
             this.mActivityTransitionTimer.cancel();
+            this.mActivityTransitionTimer = null;
         }
 
         if (isInBackground && !mIsCallingInBackground) {
