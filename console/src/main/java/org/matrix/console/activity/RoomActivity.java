@@ -145,6 +145,7 @@ public class RoomActivity extends MXCActionBarActivity {
     private static final int REQUEST_FILES = 0;
     private static final int TAKE_IMAGE = 1;
     private static final int CREATE_DOCUMENT = 2;
+    private static final int TAKE_VIDEO = 3;
 
     // max image sizes
     private static final int LARGE_IMAGE_SIZE  = 2000;
@@ -279,6 +280,21 @@ public class RoomActivity extends MXCActionBarActivity {
         }
         fileIntent.setType("*/*");
         startActivityForResult(fileIntent, REQUEST_FILES);
+    }
+
+    /**
+     * Launch the camera
+     */
+    private void launchVideo() {
+        final Intent captureIntent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
+        // lowest quality
+        captureIntent.putExtra(MediaStore.EXTRA_VIDEO_QUALITY, 0);
+        RoomActivity.this.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                startActivityForResult(captureIntent, TAKE_VIDEO);
+            }
+        });
     }
 
     /**
@@ -636,13 +652,14 @@ public class RoomActivity extends MXCActionBarActivity {
                 final Integer[] messages = new Integer[]{
                         R.string.option_send_files,
                         R.string.option_take_photo,
+                        R.string.option_take_video
                 };
 
                 final Integer[] icons = new Integer[]{
                         R.drawable.ic_material_file,  // R.string.option_send_files
                         R.drawable.ic_material_camera, // R.string.action_members
+                        R.drawable.ic_material_videocam, // R.string.action_members
                 };
-
 
                 fragment = IconAndTextDialogFragment.newInstance(icons, messages);
                 fragment.setOnClickListener(new IconAndTextDialogFragment.OnItemClickListener() {
@@ -654,6 +671,8 @@ public class RoomActivity extends MXCActionBarActivity {
                             RoomActivity.this.launchFileSelectionIntent();
                         } else if (selectedVal == R.string.option_take_photo) {
                             RoomActivity.this.launchCamera();
+                        } else if (selectedVal == R.string.option_take_video) {
+                            RoomActivity.this.launchVideo();
                         }
                     }
                 });
@@ -1635,7 +1654,7 @@ public class RoomActivity extends MXCActionBarActivity {
         }
 
         if (resultCode == RESULT_OK) {
-            if ((requestCode == REQUEST_FILES) || (requestCode == TAKE_IMAGE)) {
+            if ((requestCode == REQUEST_FILES) || (requestCode == TAKE_IMAGE) || (requestCode == TAKE_VIDEO)) {
                 sendMediasIntent(data);
             } else if (requestCode == CREATE_DOCUMENT) {
                 Uri currentUri = data.getData();
