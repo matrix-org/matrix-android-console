@@ -250,7 +250,10 @@ public class SettingsActivity extends MXCActionBarActivity {
                 sessionIndex++;
             }
 
-            config += String.format(getString(R.string.settings_config_home_server), session.getCredentials().homeServer);
+            config += String.format(
+                    getString(R.string.settings_config_home_server),
+                    session.getHomeserverConfig().getHomeserverUri().toString()
+            );
             config += "\n";
 
             config += String.format(getString(R.string.settings_config_user_id), session.getMyUser().userId);

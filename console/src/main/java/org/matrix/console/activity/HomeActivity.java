@@ -48,6 +48,7 @@ import android.widget.ExpandableListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.matrix.androidsdk.HomeserverConnectionConfig;
 import org.matrix.androidsdk.MXSession;
 import org.matrix.androidsdk.call.IMXCall;
 import org.matrix.androidsdk.call.MXCallsManager;
@@ -187,10 +188,10 @@ public class HomeActivity extends MXCActionBarActivity {
         }
 
         final MXSession session = sessions.get(index);
-        final String homeServer = session.getCredentials().homeServer;
+        final String homeServerUrl = session.getHomeserverConfig().getHomeserverUri().toString();
 
         // the home server has already been checked ?
-        if (checkedHomeServers.indexOf(homeServer) >= 0) {
+        if (checkedHomeServers.indexOf(homeServerUrl) >= 0) {
             // jump to the next session
             refreshPublicRoomsList(sessions, checkedHomeServers, index + 1, publicRoomsListList);
         } else {
@@ -198,7 +199,7 @@ public class HomeActivity extends MXCActionBarActivity {
             session.getEventsApiClient().loadPublicRooms(new SimpleApiCallback<List<PublicRoom>>(this) {
                 @Override
                 public void onSuccess(List<PublicRoom> publicRooms) {
-                    checkedHomeServers.add(homeServer);
+                    checkedHomeServers.add(homeServerUrl);
                     publicRoomsListList.add(publicRooms);
 
                     // jump to the next session
@@ -213,7 +214,8 @@ public class HomeActivity extends MXCActionBarActivity {
         ArrayList<MXSession> matchedSessions = new ArrayList<MXSession>();
 
         for(MXSession session : sessions) {
-            if (session.getCredentials().homeServer.equals(homeServerURL)) {
+            String sessionHsUrl = session.getHomeserverConfig().getHomeserverUri().toString();
+            if (sessionHsUrl.equals(homeServerURL)) {
                 matchedSessions.add(session);
             }
         }
@@ -1226,11 +1228,11 @@ public class HomeActivity extends MXCActionBarActivity {
                 new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog,
                                         int whichButton) {
-                        String hsUrl = homeServerEditText.getText().toString();
+                        String hsUrlString = homeServerEditText.getText().toString();
                         String username = usernameEditText.getText().toString();
                         String password = passwordEditText.getText().toString();
 
-                        if (!hsUrl.startsWith("http")) {
+                        if (!hsUrlString.startsWith("http")) {
                             Toast.makeText(HomeActivity.this, getString(R.string.login_error_must_start_http), Toast.LENGTH_SHORT).show();
                             return;
                         }
@@ -1240,10 +1242,13 @@ public class HomeActivity extends MXCActionBarActivity {
                             return;
                         }
 
+                        Uri hsUrl = Uri.parse(hsUrlString);
+
                         LoginRestClient client = null;
+                        final HomeserverConnectionConfig hsConfig = new HomeserverConnectionConfig(hsUrl);
 
                         try {
-                            client = new LoginRestClient(Uri.parse(hsUrl));
+                            client = new LoginRestClient(hsConfig);
                         } catch (Exception e) {
                         }
 
@@ -1267,7 +1272,8 @@ public class HomeActivity extends MXCActionBarActivity {
                                 if (isDuplicated) {
                                     Toast.makeText(getApplicationContext(), getString(R.string.login_error_already_logged_in), Toast.LENGTH_LONG).show();
                                 } else {
-                                    MXSession session = Matrix.getInstance(getApplicationContext()).createSession(credentials);
+                                    hsConfig.setCredentials(credentials);
+                                    MXSession session = Matrix.getInstance(getApplicationContext()).createSession(hsConfig);
                                     Matrix.getInstance(getApplicationContext()).addSession(session);
                                     startActivity(new Intent(HomeActivity.this, SplashActivity.class));
                                     HomeActivity.this.finish();

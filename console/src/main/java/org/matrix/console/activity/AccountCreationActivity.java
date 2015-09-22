@@ -35,7 +35,7 @@ public class AccountCreationActivity extends Activity {
     public static String EXTRA_HOME_SERVER_ID = "org.matrix.console.activity.EXTRA_HOME_SERVER_ID";
 
     WebView mWebView = null;
-    String mHomeServer = null;
+    String mHomeServerUrl = null;
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
@@ -59,18 +59,18 @@ public class AccountCreationActivity extends Activity {
 
         Intent intent = getIntent();
 
-        mHomeServer = "https://matrix.org/";
+        mHomeServerUrl = "https://matrix.org/";
 
         if (intent.hasExtra(EXTRA_HOME_SERVER_ID)) {
-            mHomeServer = intent.getStringExtra(EXTRA_HOME_SERVER_ID);
+            mHomeServerUrl = intent.getStringExtra(EXTRA_HOME_SERVER_ID);
         }
 
         // check the trailing slash
-        if (!mHomeServer.endsWith("/")) {
-            mHomeServer += "/";
+        if (!mHomeServerUrl.endsWith("/")) {
+            mHomeServerUrl += "/";
         }
 
-        mWebView.loadUrl(mHomeServer + "_matrix/static/client/register/");
+        mWebView.loadUrl(mHomeServerUrl + "_matrix/static/client/register/");
 
         mWebView.setWebViewClient(new WebViewClient(){
             @Override
@@ -110,11 +110,12 @@ public class AccountCreationActivity extends Activity {
                         if (parameters.containsKey("homeServer") && parameters.containsKey("userId") && parameters.containsKey("accessToken") && parameters.containsKey("action")) {
                             final String userId =  parameters.get("userId");
                             final String accessToken =  parameters.get("accessToken");
+                            final String homeServer = parameters.get("homeServer");
                             String action =  parameters.get("action");
 
                             // remove the trailing /
-                            if (mHomeServer.endsWith("/")) {
-                                mHomeServer = mHomeServer.substring(0, mHomeServer.length()-1);
+                            if (mHomeServerUrl.endsWith("/")) {
+                                mHomeServerUrl = mHomeServerUrl.substring(0, mHomeServerUrl.length()-1);
                             }
 
                             // check the action
@@ -123,7 +124,8 @@ public class AccountCreationActivity extends Activity {
                                     @Override
                                     public void run() {
                                         Intent returnIntent = new Intent();
-                                        returnIntent.putExtra("homeServer", mHomeServer);
+                                        returnIntent.putExtra("homeServerUrl", mHomeServerUrl);
+                                        returnIntent.putExtra("homeServer", homeServer);
                                         returnIntent.putExtra("userId", userId);
                                         returnIntent.putExtra("accessToken", accessToken);
                                         setResult(RESULT_OK, returnIntent);
