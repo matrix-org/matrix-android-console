@@ -35,22 +35,16 @@ import org.matrix.androidsdk.rest.client.LoginRestClient;
 import org.matrix.androidsdk.rest.model.MatrixError;
 import org.matrix.androidsdk.rest.model.login.Credentials;
 import org.matrix.androidsdk.ssl.CertUtil;
+import org.matrix.androidsdk.ssl.Fingerprint;
 import org.matrix.androidsdk.ssl.UnrecognizedCertificateException;
 import org.matrix.console.Matrix;
 import org.matrix.console.R;
 
-import java.security.MessageDigest;
-import java.security.cert.CertPath;
-import java.security.cert.CertPathValidatorException;
-import java.security.cert.Certificate;
-import java.security.cert.X509Certificate;
-import java.util.ArrayList;
 
 /**
  * Displays the login screen.
  */
 public class LoginActivity extends MXCActionBarActivity {
-
     private static final String LOG_TAG = "LoginActivity";
     static final int ACCOUNT_CREATION_ACTIVITY_REQUEST_CODE = 314;
 
@@ -165,8 +159,8 @@ public class LoginActivity extends MXCActionBarActivity {
 
                 UnrecognizedCertificateException unrecCertEx = CertUtil.getCertificateException(e);
                 if (unrecCertEx != null) {
-                    byte[] fingerprint = unrecCertEx.getFingerprint();
-                    Log.d(LOG_TAG, "Found fingerprint: SHA-256: " + CertUtil.fingerprintToHexString(fingerprint));
+                    final Fingerprint fingerprint = unrecCertEx.getFingerprint();
+                    Log.d(LOG_TAG, "Found fingerprint: SHA-256: " + fingerprint.getBytesAsHexString());
                     // TODO: Handle this. For example by displaying a "Do you trust this cert?" dialog
                 }
 
