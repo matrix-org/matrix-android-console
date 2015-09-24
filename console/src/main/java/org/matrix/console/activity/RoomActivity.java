@@ -820,7 +820,7 @@ public class RoomActivity extends MXCActionBarActivity {
 
 
         if (hasPreviewedMedia) {
-            mMediasCache.loadBitmap(mImagePreviewView, mPendingThumbnailUrl, 0, ExifInterface.ORIENTATION_UNDEFINED, mPendingMimeType);
+            mMediasCache.loadBitmap(mSession.getHomeserverConfig(), mImagePreviewView, mPendingThumbnailUrl, 0, ExifInterface.ORIENTATION_UNDEFINED, mPendingMimeType);
         }
 
         mImagePreviewLayout.setVisibility(hasPreviewedMedia ? View.VISIBLE : View.GONE);

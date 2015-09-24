@@ -227,7 +227,7 @@ public class ConsoleMessagesAdapter extends MessagesAdapter {
                 String savedMediaPath = CommonActivityUtils.saveMediaIntoDownloads(mContext, mediaFile, videoMessage.body, videoMessage.getVideoMimeType());
                 CommonActivityUtils.openMedia(ConsoleApplication.getCurrentActivity(), savedMediaPath, videoMessage.getVideoMimeType());
             } else {
-                final String downloadId = mMediasCache.downloadMedia(mContext, videoMessage.url, videoMessage.getVideoMimeType());
+                final String downloadId = mMediasCache.downloadMedia(mContext, mSession.getHomeserverConfig(), videoMessage.url, videoMessage.getVideoMimeType());
                 final VideoMessage fVideoMessage = videoMessage;
                 final int fPosition = position;
 
