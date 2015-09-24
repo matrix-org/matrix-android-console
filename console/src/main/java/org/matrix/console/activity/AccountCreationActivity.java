@@ -35,7 +35,8 @@ public class AccountCreationActivity extends Activity {
     public static String EXTRA_HOME_SERVER_ID = "org.matrix.console.activity.EXTRA_HOME_SERVER_ID";
 
     WebView mWebView = null;
-    String mHomeServerUrl = null;
+
+    private String mHomeServerUrl = null;
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {

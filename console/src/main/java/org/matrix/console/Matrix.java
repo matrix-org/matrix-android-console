@@ -95,19 +95,19 @@ public class Matrix {
             return sessions.get(0);
         }
 
-        ArrayList<HomeserverConnectionConfig> cconfigList = mLoginStorage.getCredentialsList();
+        ArrayList<HomeserverConnectionConfig> hsConfigList = mLoginStorage.getCredentialsList();
 
         // any account ?
-        if ((cconfigList == null) || (cconfigList.size() == 0)) {
+        if ((hsConfigList == null) || (hsConfigList.size() == 0)) {
             return null;
         }
 
         ArrayList<String> matrixIds = new ArrayList<String>();
         sessions = new ArrayList<MXSession>();
 
-        for(HomeserverConnectionConfig config: cconfigList) {
+        for(HomeserverConnectionConfig config: hsConfigList) {
             // avoid duplicated accounts.
-            if (matrixIds.indexOf(config.getCredentials().userId) < 0) {
+            if (config.getCredentials() != null || matrixIds.indexOf(config.getCredentials().userId) < 0) {
                 MXSession session = createSession(config);
                 sessions.add(session);
                 matrixIds.add(config.getCredentials().userId);

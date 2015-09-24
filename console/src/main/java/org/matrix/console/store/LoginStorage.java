@@ -114,9 +114,8 @@ public class LoginStorage {
     /**
      * Add a credentials to the credentials list
      * @param config the HomeserverConnectionConfig to add.
-     * @return true if the HomeserverConnectionConfig has been succcessfully added
      */
-    public boolean addCredentials(HomeserverConnectionConfig config) {
+    public void addCredentials(HomeserverConnectionConfig config) {
         if (null != config && config.getCredentials() != null) {
             SharedPreferences prefs = mContext.getSharedPreferences(PREFS_LOGIN, Context.MODE_PRIVATE);
             SharedPreferences.Editor editor = prefs.edit();
@@ -135,24 +134,20 @@ public class LoginStorage {
                 throw new RuntimeException("Failed to serialize connection config");
             }
 
+
             String ser = new JSONArray(serialized).toString();
 
             Log.d(LOG_TAG, "Setting connection json: " + ser);
 
             editor.putString(PREFS_KEY_CONNECTION_CONFIGS, ser);
-
-            return editor.commit();
         }
-
-        return false;
     }
 
     /**
      * Remove the credentials from credentials list
      * @param config teh credentials to remove
-     * @return
      */
-    public Boolean removeCredentials(HomeserverConnectionConfig config) {
+    public void removeCredentials(HomeserverConnectionConfig config) {
         if (null != config && config.getCredentials() != null) {
             SharedPreferences prefs = mContext.getSharedPreferences(PREFS_LOGIN, Context.MODE_PRIVATE);
             SharedPreferences.Editor editor = prefs.edit();
@@ -173,27 +168,22 @@ public class LoginStorage {
                 throw new RuntimeException("Failed to serialize connection config");
             }
 
-            if (!found) return false;
+            if (!found) return;
 
             String ser = new JSONArray(serialized).toString();
 
             Log.d(LOG_TAG, "Setting connection json: " + ser);
 
             editor.putString(PREFS_KEY_CONNECTION_CONFIGS, ser);
-
-            return editor.commit();
         }
-
-        return false;
     }
 
     /**
      * Replace the credential from credentials list, based on credentials.userId.
      * If it does not match an existing credential it does *not* insert the new credentials.
      * @param config the credentials to insert
-     * @return
      */
-    public Boolean replaceCredentials(HomeserverConnectionConfig config) {
+    public void replaceCredentials(HomeserverConnectionConfig config) {
         if (null != config && config.getCredentials() != null) {
             SharedPreferences prefs = mContext.getSharedPreferences(PREFS_LOGIN, Context.MODE_PRIVATE);
             SharedPreferences.Editor editor = prefs.edit();
@@ -215,17 +205,13 @@ public class LoginStorage {
                 throw new RuntimeException("Failed to serialize connection config");
             }
 
-            if (!found) return false;
+            if (!found) return;
 
             String ser = new JSONArray(serialized).toString();
 
             Log.d(LOG_TAG, "Setting connection json: " + ser);
 
             editor.putString(PREFS_KEY_CONNECTION_CONFIGS, ser);
-
-            return editor.commit();
         }
-
-        return false;
     }
 }
