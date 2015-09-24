@@ -19,30 +19,75 @@ import android.app.Activity;
 import android.util.Log;
 import android.widget.Toast;
 
+import org.matrix.androidsdk.HomeserverConnectionConfig;
+import org.matrix.androidsdk.MXSession;
 import org.matrix.androidsdk.rest.callback.ApiFailureCallback;
 import org.matrix.androidsdk.rest.model.MatrixError;
+import org.matrix.androidsdk.ssl.CertUtil;
+import org.matrix.androidsdk.ssl.Fingerprint;
+import org.matrix.androidsdk.ssl.UnrecognizedCertificateException;
 import org.matrix.console.activity.CommonActivityUtils;
+import org.matrix.console.store.LoginStorage;
 
 public class ErrorListener implements ApiFailureCallback {
 
     private static final String LOG_TAG = "ErrorListener";
 
     private Activity mActivity;
+    private HomeserverConnectionConfig mConfig;
 
-    public ErrorListener(Activity activity) {
+    public ErrorListener(HomeserverConnectionConfig config, Activity activity) {
+        mConfig = config;
         mActivity = activity;
     }
 
     @Override
-    public void onNetworkError(Exception e) {
+    public void onNetworkError(final Exception e) {
         Log.e(LOG_TAG, "Network error: " + e.getMessage());
 
         // do not trigger toaster if the application is in background
         if (!ConsoleApplication.isAppInBackground()) {
+            UnrecognizedCertificateException unrecCertEx = CertUtil.getCertificateException(e);
+            if (unrecCertEx != null) {
+                final Fingerprint fingerprint = unrecCertEx.getFingerprint();
+                Log.d(LOG_TAG, "Found fingerprint: SHA-256: " + fingerprint.getBytesAsHexString());
+
+                mActivity.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        UnrecognizedCertHandler h = new UnrecognizedCertHandler(mConfig, fingerprint, null);
+                        h.show(new UnrecognizedCertHandler.Callback() {
+                            @Override
+                            public void onAccept() {
+                                LoginStorage loginStorage = Matrix.getInstance(mActivity.getApplicationContext()).getLoginStorage();
+                                loginStorage.replaceCredentials(mConfig);
+                            }
+
+                            @Override
+                            public void onIgnore() {
+                                handleNetworkError(e);
+                            }
+
+                            @Override
+                            public void onReject() {
+                                handleNetworkError(e);
+                            }
+                        });
+                    }
+                });
+            } else {
+                handleNetworkError(e);
+            }
+
+        }
+    }
+
+    private void handleNetworkError(Exception e) {
+        if (!ConsoleApplication.isAppInBackground()) {
             mActivity.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                Toast.makeText(mActivity, mActivity.getString(R.string.network_error), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(mActivity, mActivity.getString(R.string.network_error), Toast.LENGTH_SHORT).show();
                 }
             });
         }
