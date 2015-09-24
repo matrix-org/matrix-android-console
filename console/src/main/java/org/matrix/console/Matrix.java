@@ -103,7 +103,7 @@ public class Matrix {
 
         for(HomeserverConnectionConfig config: cconfigList) {
             // avoid duplicated accounts.
-            if (matrixIds.indexOf(config.getCredentials().userId) < 0) {
+            if (config.getCredentials() != null || matrixIds.indexOf(config.getCredentials().userId) < 0) {
                 MXSession session = createSession(config);
                 sessions.add(session);
                 matrixIds.add(config.getCredentials().userId);
