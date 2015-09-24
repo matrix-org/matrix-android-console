@@ -34,6 +34,7 @@ import android.webkit.WebView;
 
 import com.google.android.gms.analytics.ExceptionReporter;
 
+import org.matrix.androidsdk.HomeserverConnectionConfig;
 import org.matrix.androidsdk.util.ImageUtils;
 import org.matrix.androidsdk.view.PieFractionView;
 import org.matrix.console.Matrix;
@@ -63,12 +64,15 @@ public class ImagesSliderAdapter extends PagerAdapter {
 
     private LayoutInflater mLayoutInflater;
 
-    public ImagesSliderAdapter(Context context, List<SlidableImageInfo> listImageMessages, int maxImageWidth, int maxImageHeight) {
+    private HomeserverConnectionConfig mHsConfig;
+
+    public ImagesSliderAdapter(Context context, HomeserverConnectionConfig hsConfig, List<SlidableImageInfo> listImageMessages, int maxImageWidth, int maxImageHeight) {
         this.context = context;
         this.mListImageMessages = listImageMessages;
         this.mMaxImageWidth = maxImageWidth;
         this.mMaxImageHeight = maxImageHeight;
         this.mLayoutInflater = LayoutInflater.from(context);
+        this.mHsConfig = hsConfig;
     }
 
     @Override
@@ -100,7 +104,7 @@ public class ImagesSliderAdapter extends PagerAdapter {
         final SlidableImageInfo imageInfo = mListImageMessages.get(position);
         final String viewportContent = "width=640";
         final String loadingUri = imageInfo.mImageUrl;
-        final String downloadId = mediasCache.loadBitmap(this.context, loadingUri, imageInfo.mRotationAngle, imageInfo.mOrientation, imageInfo.mMimeType);
+        final String downloadId = mediasCache.loadBitmap(this.context, mHsConfig, loadingUri, imageInfo.mRotationAngle, imageInfo.mOrientation, imageInfo.mMimeType);
 
         if (null != downloadId) {
             pieFractionView.setVisibility(View.VISIBLE);
