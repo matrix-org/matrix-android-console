@@ -55,7 +55,7 @@ public class ErrorListener implements ApiFailureCallback {
                 mActivity.runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        UnrecognizedCertHandler h = new UnrecognizedCertHandler(mConfig, fingerprint, null);
+                        UnrecognizedCertHandler h = new UnrecognizedCertHandler(mConfig, fingerprint, true);
                         h.show(new UnrecognizedCertHandler.Callback() {
                             @Override
                             public void onAccept() {

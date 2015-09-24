@@ -206,6 +206,7 @@ public class LoginStorage {
                 for (HomeserverConnectionConfig c : configs) {
                     if (c.getCredentials().userId.equals(config.getCredentials().userId)) {
                         serialized.add(config.toJson());
+                        found = true;
                     } else {
                         serialized.add(c.toJson());
                     }

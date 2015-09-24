@@ -31,17 +31,11 @@ import android.widget.Toast;
 import org.matrix.androidsdk.HomeserverConnectionConfig;
 import org.matrix.androidsdk.MXSession;
 import org.matrix.androidsdk.rest.callback.SimpleApiCallback;
-import org.matrix.androidsdk.rest.client.LoginRestClient;
 import org.matrix.androidsdk.rest.model.MatrixError;
 import org.matrix.androidsdk.rest.model.login.Credentials;
-import org.matrix.androidsdk.ssl.CertUtil;
-import org.matrix.androidsdk.ssl.Fingerprint;
-import org.matrix.androidsdk.ssl.UnrecognizedCertificateException;
 import org.matrix.console.LoginHandler;
 import org.matrix.console.Matrix;
 import org.matrix.console.R;
-import org.matrix.console.UnrecognizedCertHandler;
-import org.matrix.console.fragments.SSLFingerprintPromptFragment;
 
 
 /**
