@@ -149,6 +149,8 @@ public class LoginStorage {
      */
     public void removeCredentials(HomeserverConnectionConfig config) {
         if (null != config && config.getCredentials() != null) {
+            Log.d(LOG_TAG, "Removing account: " + config.getCredentials().userId);
+
             SharedPreferences prefs = mContext.getSharedPreferences(PREFS_LOGIN, Context.MODE_PRIVATE);
             SharedPreferences.Editor editor = prefs.edit();
 

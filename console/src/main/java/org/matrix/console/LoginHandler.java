@@ -44,8 +44,7 @@ public class LoginHandler {
                     Log.d(LOG_TAG, "Found fingerprint: SHA-256: " + fingerprint.getBytesAsHexString());
                     // TODO: Handle this. For example by displaying a "Do you trust this cert?" dialog
 
-                    UnrecognizedCertHandler h = new UnrecognizedCertHandler(hsConfig, fingerprint, false);
-                    h.show(new UnrecognizedCertHandler.Callback() {
+                    UnrecognizedCertHandler.show(hsConfig, fingerprint, false, new UnrecognizedCertHandler.Callback() {
                         @Override
                         public void onAccept() {
                             login(appCtx, hsConfig, username, password, callback);
