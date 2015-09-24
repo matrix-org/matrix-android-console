@@ -117,7 +117,7 @@ public class SplashActivity extends MXCActionBarActivity {
                 fSession.getDataHandler().addListener(eventListener);
 
                 // Set the main error listener
-                fSession.setFailureCallback(new ErrorListener(fSession.getHomeserverConfig(), this));
+                fSession.setFailureCallback(new ErrorListener(fSession, this));
 
                 // session to activate
                 matrixIds.add(session.getCredentials().userId);

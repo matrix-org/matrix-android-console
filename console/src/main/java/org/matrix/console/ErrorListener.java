@@ -34,10 +34,10 @@ public class ErrorListener implements ApiFailureCallback {
     private static final String LOG_TAG = "ErrorListener";
 
     private Activity mActivity;
-    private HomeserverConnectionConfig mConfig;
+    private MXSession mSession;
 
-    public ErrorListener(HomeserverConnectionConfig config, Activity activity) {
-        mConfig = config;
+    public ErrorListener(MXSession session, Activity activity) {
+        mSession = session;
         mActivity = activity;
     }
 
@@ -55,11 +55,11 @@ public class ErrorListener implements ApiFailureCallback {
                 mActivity.runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        UnrecognizedCertHandler.show(mConfig, fingerprint, true, new UnrecognizedCertHandler.Callback() {
+                        UnrecognizedCertHandler.show(mSession.getHomeserverConfig(), fingerprint, true, new UnrecognizedCertHandler.Callback() {
                             @Override
                             public void onAccept() {
                                 LoginStorage loginStorage = Matrix.getInstance(mActivity.getApplicationContext()).getLoginStorage();
-                                loginStorage.replaceCredentials(mConfig);
+                                loginStorage.replaceCredentials(mSession.getHomeserverConfig());
                             }
 
                             @Override
@@ -69,7 +69,7 @@ public class ErrorListener implements ApiFailureCallback {
 
                             @Override
                             public void onReject() {
-                                handleNetworkError(e);
+                                CommonActivityUtils.logout(mActivity, mSession, true);
                             }
                         });
                     }
