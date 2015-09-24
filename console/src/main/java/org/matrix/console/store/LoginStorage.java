@@ -112,9 +112,8 @@ public class LoginStorage {
     /**
      * Add a credentials to the credentials list
      * @param config the HomeserverConnectionConfig to add.
-     * @return true if the HomeserverConnectionConfig has been succcessfully added
      */
-    public boolean addCredentials(HomeserverConnectionConfig config) {
+    public void addCredentials(HomeserverConnectionConfig config) {
         if (null != config) {
             SharedPreferences prefs = mContext.getSharedPreferences(PREFS_LOGIN, Context.MODE_PRIVATE);
             SharedPreferences.Editor editor = prefs.edit();
@@ -134,11 +133,7 @@ public class LoginStorage {
             }
 
             editor.putString(PREFS_KEY_CONNECTION_CONFIGS, new JSONArray(serialized).toString());
-
-            return editor.commit();
         }
-
-        return false;
     }
 
     /**
@@ -146,7 +141,7 @@ public class LoginStorage {
      * @param config teh credentials to remove
      * @return
      */
-    public Boolean removeCredentials(HomeserverConnectionConfig config) {
+    public void removeCredentials(HomeserverConnectionConfig config) {
         if (null != config) {
             SharedPreferences prefs = mContext.getSharedPreferences(PREFS_LOGIN, Context.MODE_PRIVATE);
             SharedPreferences.Editor editor = prefs.edit();
@@ -167,13 +162,9 @@ public class LoginStorage {
                 throw new RuntimeException("Failed to serialize connection config");
             }
 
-            if (!found) return false;
+            if (!found) return;
 
             editor.putString(PREFS_KEY_CONNECTION_CONFIGS, new JSONArray(serialized).toString());
-
-            return editor.commit();
         }
-
-        return false;
     }
 }
