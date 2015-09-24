@@ -133,6 +133,7 @@ public class LoginStorage {
             }
 
             editor.putString(PREFS_KEY_CONNECTION_CONFIGS, new JSONArray(serialized).toString());
+            editor.commit();
         }
     }
 
@@ -165,6 +166,7 @@ public class LoginStorage {
             if (!found) return;
 
             editor.putString(PREFS_KEY_CONNECTION_CONFIGS, new JSONArray(serialized).toString());
+            editor.commit();
         }
     }
 }
