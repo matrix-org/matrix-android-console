@@ -134,12 +134,12 @@ public class LoginStorage {
                 throw new RuntimeException("Failed to serialize connection config");
             }
 
-
             String ser = new JSONArray(serialized).toString();
 
             Log.d(LOG_TAG, "Setting connection json: " + ser);
 
             editor.putString(PREFS_KEY_CONNECTION_CONFIGS, ser);
+            editor.commit();
         }
     }
 
@@ -177,6 +177,7 @@ public class LoginStorage {
             Log.d(LOG_TAG, "Setting connection json: " + ser);
 
             editor.putString(PREFS_KEY_CONNECTION_CONFIGS, ser);
+            editor.commit();
         }
     }
 
@@ -214,6 +215,7 @@ public class LoginStorage {
             Log.d(LOG_TAG, "Setting connection json: " + ser);
 
             editor.putString(PREFS_KEY_CONNECTION_CONFIGS, ser);
+            editor.commit();
         }
     }
 }
