@@ -181,6 +181,7 @@ public class HomeActivity extends MXCActionBarActivity {
         // sanity checks
         if ((null == sessions) || (index >= sessions.size())) {
             mAdapter.setPublicRoomsList(publicRoomsListList, checkedHomeServers);
+            mAdapter.notifyDataSetChanged();
             mPublicRoomsListList = publicRoomsListList;
             mHomeServerNames = checkedHomeServers;
             return;
@@ -571,16 +572,6 @@ public class HomeActivity extends MXCActionBarActivity {
             private boolean mInitialSyncComplete = false;
 
             @Override
-            public void onPresencesSyncComplete() {
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        mAdapter.notifyDataSetChanged();
-                    }
-                });
-            }
-
-            @Override
             public void onInitialSyncComplete() {
                 runOnUiThread(new Runnable() {
                     @Override
@@ -602,9 +593,9 @@ public class HomeActivity extends MXCActionBarActivity {
                         mAdapter.highlightRoom("#matrix-dev:matrix.org");
                         mAdapter.highlightRoom("#matrix-fr:matrix.org");
 
-                        mAdapter.setPublicRoomsList(mPublicRoomsListList, mHomeServerNames);
                         mAdapter.sortSummaries();
-                        mAdapter.notifyDataSetChanged();
+                        mAdapter.setPublicRoomsList(mPublicRoomsListList, mHomeServerNames);
+
 
                         expandAllGroups();
 

@@ -51,6 +51,11 @@ public class LogUtilities {
                 "ProgressBar:S",
                 "AbsListView:S",
                 "dalvikvm:S",
+                "OpenGLRenderer:S",
+                "NativeCrypto:S",
+                "VelocityTracker:S",
+                "MaliEGL:S",
+                "GraphicBuffer:S",
                 "*:*"
     };
 
