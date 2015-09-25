@@ -659,10 +659,10 @@ public class HomeActivity extends MXCActionBarActivity {
                     public void run() {
                         if ((event.roomId != null) && isDisplayableEvent(event)) {
                             List<MXSession> sessions = new ArrayList<MXSession>(Matrix.getMXSessions(HomeActivity.this));
-                            int section = sessions.indexOf(session);
+                            final int section = sessions.indexOf(session);
                             String matrixId = session.getCredentials().userId;
 
-                            mAdapter.setLatestEvent(section, event, roomState);
+                            mAdapter.setLatestEvent(section, event, roomState, false);
 
                             RoomSummary summary = mAdapter.getSummaryByRoomId(section, event.roomId);
 
