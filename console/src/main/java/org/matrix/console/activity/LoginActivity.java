@@ -16,6 +16,7 @@
 
 package org.matrix.console.activity;
 
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.net.Uri;
@@ -28,14 +29,22 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.matrix.androidsdk.HomeserverConnectionConfig;
 import org.matrix.androidsdk.MXSession;
 import org.matrix.androidsdk.rest.callback.SimpleApiCallback;
+import org.matrix.androidsdk.rest.client.LoginRestClient;
 import org.matrix.androidsdk.rest.model.MatrixError;
 import org.matrix.androidsdk.rest.model.login.Credentials;
+import org.matrix.androidsdk.ssl.Fingerprint;
 import org.matrix.console.LoginHandler;
 import org.matrix.console.Matrix;
 import org.matrix.console.R;
+
+import java.sql.Array;
+import java.util.ArrayList;
 
 
 /**
@@ -46,8 +55,10 @@ public class LoginActivity extends MXCActionBarActivity {
 
     private static final String LOG_TAG = "LoginActivity";
     static final int ACCOUNT_CREATION_ACTIVITY_REQUEST_CODE = 314;
+    static final int QRCODE_REQUEST = 315;
 
     Button mLoginButton = null;
+    Button mQrButton = null;
     Button mcreateAccountButton = null;
 
     @Override
@@ -78,6 +89,14 @@ public class LoginActivity extends MXCActionBarActivity {
                 String password = ((EditText) findViewById(R.id.editText_password)).getText().toString().trim();
                 String hs = ((EditText) findViewById(R.id.editText_hs)).getText().toString().trim();
                 onLoginClick(hs, username, password);
+            }
+        });
+
+        mQrButton = (Button)findViewById(R.id.button_qr);
+        mQrButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                onQrCodeClick();
             }
         });
 
@@ -166,6 +185,16 @@ public class LoginActivity extends MXCActionBarActivity {
         }
     }
 
+    private void onQrCodeClick() {
+        Intent intent = new Intent("com.google.zxing.client.android.SCAN");
+        intent.putExtra("SCAN_MODE", "QR_CODE_MODE");
+        try {
+            startActivityForResult(intent, QRCODE_REQUEST);
+        } catch (Exception e) {
+            Toast.makeText(this, "No QR Code scanning modules found.", Toast.LENGTH_LONG);
+        }
+    }
+
     private boolean hasCredentials() {
         return Matrix.getInstance(this).getDefaultSession() != null;
     }
@@ -176,7 +205,74 @@ public class LoginActivity extends MXCActionBarActivity {
     }
 
     protected void onActivityResult(int requestCode, int resultCode, Intent data)  {
-        if (ACCOUNT_CREATION_ACTIVITY_REQUEST_CODE == requestCode) {
+        if (requestCode == QRCODE_REQUEST) {
+            try {
+                String contents = data.getStringExtra("SCAN_RESULT");
+
+                if (contents == null) return;
+
+                JSONObject jsonObject = new JSONObject(contents);
+                String token = jsonObject.getString("token");
+                String userId = jsonObject.getString("user_id");
+                String hsUrlString = jsonObject.getString("homeserver_url");
+                JSONArray fingerprintJson = jsonObject.getJSONArray("fingerprints");
+
+                ArrayList<Fingerprint> fingerprints = new ArrayList<>(fingerprintJson.length());
+                for (int i = 0; i < fingerprintJson.length(); i++) {
+                    Fingerprint f = Fingerprint.fromJson(fingerprintJson.getJSONObject(i));
+                    fingerprints.add(f);
+                }
+
+                Uri hsUrl = Uri.parse(hsUrlString);
+                final HomeserverConnectionConfig hsConfig = new HomeserverConnectionConfig(hsUrl, null, fingerprints, false);
+                LoginRestClient client = new LoginRestClient(hsConfig);
+                final Context appCtx = getApplicationContext();
+
+                mLoginButton.setEnabled(false);
+                mcreateAccountButton.setEnabled(false);
+                client.loginWithToken(userId, token, new SimpleApiCallback<Credentials>() {
+                    @Override
+                    public void onSuccess(Credentials credentials) {
+                        Log.e(LOG_TAG, "client loginWithPassword succeeded.");
+                        hsConfig.setCredentials(credentials);
+                        MXSession session = Matrix.getInstance(appCtx).createSession(hsConfig);
+                        Matrix.getInstance(appCtx).addSession(session);
+                        goToSplash();
+                        LoginActivity.this.finish();
+                    }
+
+                    @Override
+                    public void onNetworkError(Exception e) {
+                        Log.e(LOG_TAG, "Network Error: " + e.getMessage(), e);
+                        mLoginButton.setEnabled(true);
+                        mcreateAccountButton.setEnabled(true);
+                        Toast.makeText(getApplicationContext(), getString(R.string.login_error_network_error), Toast.LENGTH_LONG).show();
+                    }
+
+                    @Override
+                    public void onUnexpectedError(Exception e) {
+                        mLoginButton.setEnabled(true);
+                        mcreateAccountButton.setEnabled(true);
+                        String msg = getString(R.string.login_error_unable_login) + " : " + e.getMessage();
+                        Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_LONG).show();
+                    }
+
+                    @Override
+                    public void onMatrixError(MatrixError e) {
+                        mLoginButton.setEnabled(true);
+                        mcreateAccountButton.setEnabled(true);
+                        String msg = getString(R.string.login_error_unable_login) + " : " + e.error + "(" + e.errcode + ")";
+                        Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_LONG).show();
+                    }
+                });
+            } catch (JSONException e) {
+                Log.e(LOG_TAG, "Invalid QR code: " + e.getMessage(), e);
+                Toast.makeText(getApplicationContext(), "Invalid QR code.", Toast.LENGTH_LONG).show();
+            } catch (Exception e) {
+                Log.e(LOG_TAG, "Failed to login via QR: " + e.getMessage(), e);
+                Toast.makeText(getApplicationContext(), "Failed to login via QR. " + e.getMessage(), Toast.LENGTH_LONG).show();
+            }
+        } else if (ACCOUNT_CREATION_ACTIVITY_REQUEST_CODE == requestCode) {
             if(resultCode == RESULT_OK){
                 String homeServer = data.getStringExtra("homeServer");
                 String homeServerUrl = data.getStringExtra("homeServerUrl");
