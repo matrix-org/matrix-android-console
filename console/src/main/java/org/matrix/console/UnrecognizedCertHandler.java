@@ -16,6 +16,7 @@ import java.util.HashSet;
 
 public class UnrecognizedCertHandler {
     private static HashMap<String, HashSet<Fingerprint>> ignoredFingerprints = new HashMap<String, HashSet<Fingerprint>>();
+    private static HashSet<String> openDialogs = new HashSet<String>();
 
     public static void show(final HomeserverConnectionConfig hsConfig, final Fingerprint unrecognizedFingerprint, boolean existing, final Callback callback) {
         Activity activity = ConsoleApplication.getInstance().getCurrentActivity();
@@ -76,7 +77,7 @@ public class UnrecognizedCertHandler {
         });
 
         if (existing) {
-            builder.setNeutralButton(R.string.ignore, new DialogInterface.OnClickListener() {
+            builder.setNeutralButton(R.string.ssl_remain_offline, new DialogInterface.OnClickListener() {
                 public void onClick(DialogInterface dialog, int id) {
                     if (hsConfig.getCredentials() != null) {
                         HashSet<Fingerprint> f = ignoredFingerprints.get(hsConfig.getCredentials().userId);
@@ -91,7 +92,7 @@ public class UnrecognizedCertHandler {
                 }
             });
 
-            builder.setNegativeButton(R.string.action_logout, new DialogInterface.OnClickListener() {
+            builder.setNegativeButton(R.string.ssl_logout_account, new DialogInterface.OnClickListener() {
                 public void onClick(DialogInterface dialog, int id) {
                     callback.onReject();
                 }
