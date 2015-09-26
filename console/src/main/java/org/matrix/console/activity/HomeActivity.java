@@ -182,6 +182,7 @@ public class HomeActivity extends MXCActionBarActivity {
         // sanity checks
         if ((null == sessions) || (index >= sessions.size())) {
             mAdapter.setPublicRoomsList(publicRoomsListList, checkedHomeServers);
+            mAdapter.notifyDataSetChanged();
             mPublicRoomsListList = publicRoomsListList;
             mHomeServerNames = checkedHomeServers;
             return;
@@ -573,16 +574,6 @@ public class HomeActivity extends MXCActionBarActivity {
             private boolean mInitialSyncComplete = false;
 
             @Override
-            public void onPresencesSyncComplete() {
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        mAdapter.notifyDataSetChanged();
-                    }
-                });
-            }
-
-            @Override
             public void onInitialSyncComplete() {
                 runOnUiThread(new Runnable() {
                     @Override
@@ -604,9 +595,9 @@ public class HomeActivity extends MXCActionBarActivity {
                         mAdapter.highlightRoom("#matrix-dev:matrix.org");
                         mAdapter.highlightRoom("#matrix-fr:matrix.org");
 
-                        mAdapter.setPublicRoomsList(mPublicRoomsListList, mHomeServerNames);
                         mAdapter.sortSummaries();
-                        mAdapter.notifyDataSetChanged();
+                        mAdapter.setPublicRoomsList(mPublicRoomsListList, mHomeServerNames);
+
 
                         expandAllGroups();
 
@@ -661,10 +652,10 @@ public class HomeActivity extends MXCActionBarActivity {
                     public void run() {
                         if ((event.roomId != null) && isDisplayableEvent(event)) {
                             List<MXSession> sessions = new ArrayList<MXSession>(Matrix.getMXSessions(HomeActivity.this));
-                            int section = sessions.indexOf(session);
+                            final int section = sessions.indexOf(session);
                             String matrixId = session.getCredentials().userId;
 
-                            mAdapter.setLatestEvent(section, event, roomState);
+                            mAdapter.setLatestEvent(section, event, roomState, false);
 
                             RoomSummary summary = mAdapter.getSummaryByRoomId(section, event.roomId);
 
