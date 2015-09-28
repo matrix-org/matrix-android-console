@@ -51,34 +51,34 @@ public class UnrecognizedCertHandler {
 
         View layout = inflater.inflate(R.layout.ssl_fingerprint_prompt, null);
 
-        TextView ssl_fingerprint_title = (TextView) layout.findViewById(R.id.ssl_fingerprint_title);
-        ssl_fingerprint_title.setText(
+        TextView sslFingerprintTitle = (TextView) layout.findViewById(R.id.ssl_fingerprint_title);
+        sslFingerprintTitle.setText(
                 String.format(activity.getString(R.string.ssl_fingerprint_hash), unrecognizedFingerprint.getType().toString())
         );
 
-        TextView ssl_fingerprint = (TextView) layout.findViewById(R.id.ssl_fingerprint);
-        ssl_fingerprint.setText(unrecognizedFingerprint.getBytesAsHexString());
+        TextView sslFingerprint = (TextView) layout.findViewById(R.id.ssl_fingerprint);
+        sslFingerprint.setText(unrecognizedFingerprint.getBytesAsHexString());
 
-        TextView ssl_user_id = (TextView) layout.findViewById(R.id.ssl_user_id);
+        TextView sslUserId = (TextView) layout.findViewById(R.id.ssl_user_id);
         if (hsConfig.getCredentials() != null) {
-            ssl_user_id.setText(
-                 activity.getString(R.string.username) + ":  " + hsConfig.getCredentials().userId
+            sslUserId.setText(
+                    activity.getString(R.string.username) + ":  " + hsConfig.getCredentials().userId
             );
         } else {
-            ssl_user_id.setText(
+            sslUserId.setText(
                     activity.getString(R.string.hs_url) + ":  " + hsConfig.getHomeserverUri().toString()
             );
         }
 
-        TextView ssl_expl = (TextView) layout.findViewById(R.id.ssl_explanation);
+        TextView sslExpl = (TextView) layout.findViewById(R.id.ssl_explanation);
         if (existing) {
             if (hsConfig.getAllowedFingerprints().size() > 0) {
-                ssl_expl.setText(activity.getString(R.string.ssl_expected_existing_expl));
+                sslExpl.setText(activity.getString(R.string.ssl_expected_existing_expl));
             } else {
-                ssl_expl.setText(activity.getString(R.string.ssl_unexpected_existing_expl));
+                sslExpl.setText(activity.getString(R.string.ssl_unexpected_existing_expl));
             }
         } else {
-            ssl_expl.setText(activity.getString(R.string.ssl_cert_new_account_expl));
+            sslExpl.setText(activity.getString(R.string.ssl_cert_new_account_expl));
         }
 
         builder.setView(layout);
