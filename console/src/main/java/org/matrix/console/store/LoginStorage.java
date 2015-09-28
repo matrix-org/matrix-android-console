@@ -139,7 +139,7 @@ public class LoginStorage {
 
     /**
      * Remove the credentials from credentials list
-     * @param config teh credentials to remove
+     * @param config the credentials to remove
      * @return
      */
     public void removeCredentials(HomeserverConnectionConfig config) {
