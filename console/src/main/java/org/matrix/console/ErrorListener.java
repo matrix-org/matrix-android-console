@@ -48,35 +48,36 @@ public class ErrorListener implements ApiFailureCallback {
         // do not trigger toaster if the application is in background
         if (!ConsoleApplication.isAppInBackground()) {
             UnrecognizedCertificateException unrecCertEx = CertUtil.getCertificateException(e);
-            if (unrecCertEx != null) {
-                final Fingerprint fingerprint = unrecCertEx.getFingerprint();
-                Log.d(LOG_TAG, "Found fingerprint: SHA-256: " + fingerprint.getBytesAsHexString());
-
-                mActivity.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        UnrecognizedCertHandler.show(mSession.getHomeserverConfig(), fingerprint, true, new UnrecognizedCertHandler.Callback() {
-                            @Override
-                            public void onAccept() {
-                                LoginStorage loginStorage = Matrix.getInstance(mActivity.getApplicationContext()).getLoginStorage();
-                                loginStorage.replaceCredentials(mSession.getHomeserverConfig());
-                            }
-
-                            @Override
-                            public void onIgnore() {
-                                handleNetworkError(e);
-                            }
-
-                            @Override
-                            public void onReject() {
-                                CommonActivityUtils.logout(mActivity, mSession, true);
-                            }
-                        });
-                    }
-                });
-            } else {
+            if (unrecCertEx == null) {
                 handleNetworkError(e);
+                return;
             }
+
+            final Fingerprint fingerprint = unrecCertEx.getFingerprint();
+            Log.d(LOG_TAG, "Found fingerprint: SHA-256: " + fingerprint.getBytesAsHexString());
+
+            mActivity.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    UnrecognizedCertHandler.show(mSession.getHomeserverConfig(), fingerprint, true, new UnrecognizedCertHandler.Callback() {
+                        @Override
+                        public void onAccept() {
+                            LoginStorage loginStorage = Matrix.getInstance(mActivity.getApplicationContext()).getLoginStorage();
+                            loginStorage.replaceCredentials(mSession.getHomeserverConfig());
+                        }
+
+                        @Override
+                        public void onIgnore() {
+                            handleNetworkError(e);
+                        }
+
+                        @Override
+                        public void onReject() {
+                            CommonActivityUtils.logout(mActivity, mSession, true);
+                        }
+                    });
+                }
+            });
 
         }
     }
