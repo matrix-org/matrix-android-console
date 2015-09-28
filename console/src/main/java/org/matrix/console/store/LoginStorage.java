@@ -145,7 +145,7 @@ public class LoginStorage {
 
     /**
      * Remove the credentials from credentials list
-     * @param config teh credentials to remove
+     * @param config the credentials to remove
      */
     public void removeCredentials(HomeserverConnectionConfig config) {
         if (null != config && config.getCredentials() != null) {

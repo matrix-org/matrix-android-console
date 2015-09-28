@@ -133,12 +133,7 @@ public class ImageWebViewActivity extends FragmentActivity {
      * @return the MXsession if it exists.
      */
     private MXSession getSession(Intent intent) {
-        String matrixId = null;
-
-        if (intent.hasExtra(EXTRA_MATRIX_ID)) {
-            matrixId = intent.getStringExtra(EXTRA_MATRIX_ID);
-        }
-
+        String matrixId = intent.getStringExtra(EXTRA_MATRIX_ID);
         return Matrix.getInstance(getApplicationContext()).getSession(matrixId);
     }
 
