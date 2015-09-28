@@ -13,8 +13,11 @@ public class EventEmitter<T> {
 
     private Set<Listener<T>> mCallbacks;
 
+    Handler mUiHandler;
+
     public EventEmitter() {
         mCallbacks = new HashSet<>();
+        mUiHandler = new Handler(Looper.getMainLooper());
     }
 
     public void register(Listener<T> cb) {
@@ -32,9 +35,7 @@ public class EventEmitter<T> {
     public void fire(final T t) {
         final Set<Listener<T>> callbacks = new HashSet<>(mCallbacks);
 
-        Looper looper = Looper.getMainLooper();
-        Handler uiHandler = new Handler(looper);
-        uiHandler.post(new Runnable() {
+        mUiHandler.post(new Runnable() {
                @Override
                public void run() {
                    for (Listener<T> cb : callbacks) {
