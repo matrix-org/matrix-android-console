@@ -26,6 +26,9 @@ import android.support.v4.view.ViewPager;
 import android.util.Log;
 import android.view.View;
 
+import org.matrix.androidsdk.HomeserverConnectionConfig;
+import org.matrix.androidsdk.MXSession;
+import org.matrix.console.Matrix;
 import org.matrix.console.R;
 import org.matrix.console.adapters.ImagesSliderAdapter;
 import org.matrix.console.util.SlidableImageInfo;
@@ -39,6 +42,8 @@ public class ImageSliderActivity extends FragmentActivity {
 
     public static final String KEY_THUMBNAIL_WIDTH = "org.matrix.console.activity.ImageSliderActivity.KEY_THUMBNAIL_WIDTH";
     public static final String KEY_THUMBNAIL_HEIGHT = "org.matrix.console.activity.ImageSliderActivity.KEY_THUMBNAIL_HEIGHT";
+
+    public static final String EXTRA_MATRIX_ID = "org.matrix.console.activity.ImageSliderActivity.EXTRA_MATRIX_ID";
 
     public class DepthPageTransformer implements ViewPager.PageTransformer {
         private static final float MIN_SCALE = 0.75f;
@@ -77,6 +82,16 @@ public class ImageSliderActivity extends FragmentActivity {
         }
     }
 
+    /**
+     * Return the used MXSession from an intent.
+     * @param intent
+     * @return the MXsession if it exists.
+     */
+    private MXSession getSession(Intent intent) {
+        String matrixId = intent.getStringExtra(EXTRA_MATRIX_ID);
+        return Matrix.getInstance(getApplicationContext()).getSession(matrixId);
+    }
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
 
@@ -96,7 +111,10 @@ public class ImageSliderActivity extends FragmentActivity {
         int maxImageWidth = intent.getIntExtra(KEY_THUMBNAIL_WIDTH, 0);
         int maxImageHeight = intent.getIntExtra(ImageSliderActivity.KEY_THUMBNAIL_HEIGHT, 0);
 
-        ImagesSliderAdapter adapter = new ImagesSliderAdapter(this, listImageMessages, maxImageWidth, maxImageHeight);
+        MXSession session = getSession(intent);
+        HomeserverConnectionConfig hsConfig = session != null ? session.getHomeserverConfig() : null;
+
+        ImagesSliderAdapter adapter = new ImagesSliderAdapter(this, hsConfig, listImageMessages, maxImageWidth, maxImageHeight);
         viewPager.setAdapter(adapter);
         viewPager.setCurrentItem(position);
         viewPager.setPageTransformer(true, new DepthPageTransformer());

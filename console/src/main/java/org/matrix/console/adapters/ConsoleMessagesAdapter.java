@@ -54,7 +54,6 @@ public class ConsoleMessagesAdapter extends MessagesAdapter {
         mUiHandler = new Handler(Looper.getMainLooper());
     }
 
-
     @Override
     public void notifyDataSetChanged() {
         //  do not refresh the room when the application is in background

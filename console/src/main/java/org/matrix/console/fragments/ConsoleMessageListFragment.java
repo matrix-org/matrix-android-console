@@ -465,7 +465,7 @@ public class ConsoleMessageListFragment extends MatrixMessageListFragment {
                     String savedMediaPath = CommonActivityUtils.saveMediaIntoDownloads(getActivity(), mediaFile, fileMessage.body, fileMessage.getMimeType());
                     CommonActivityUtils.openMedia(getActivity(), savedMediaPath, fileMessage.getMimeType());
                 } else {
-                    mSession.getMediasCache().downloadMedia(getActivity(), fileMessage.url, fileMessage.getMimeType());
+                    mSession.getMediasCache().downloadMedia(getActivity(), mSession.getHomeserverConfig(), fileMessage.url, fileMessage.getMimeType());
                     mAdapter.notifyDataSetChanged();
                 }
             }
@@ -480,7 +480,7 @@ public class ConsoleMessageListFragment extends MatrixMessageListFragment {
                     String savedMediaPath = CommonActivityUtils.saveMediaIntoDownloads(getActivity(), mediaFile, videoMessage.body, videoMessage.getVideoMimeType());
                     CommonActivityUtils.openMedia(getActivity(), savedMediaPath, videoMessage.getVideoMimeType());
                 } else {
-                    mSession.getMediasCache().downloadMedia(getActivity(), videoMessage.url, videoMessage.getVideoMimeType());
+                    mSession.getMediasCache().downloadMedia(getActivity(), mSession.getHomeserverConfig(), videoMessage.url, videoMessage.getVideoMimeType());
                     mAdapter.notifyDataSetChanged();
                 }
             }

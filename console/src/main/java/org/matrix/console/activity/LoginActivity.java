@@ -21,25 +21,30 @@ import android.content.pm.ActivityInfo;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Base64;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import org.matrix.androidsdk.HomeserverConnectionConfig;
 import org.matrix.androidsdk.MXSession;
 import org.matrix.androidsdk.rest.callback.SimpleApiCallback;
 import org.matrix.androidsdk.rest.client.LoginRestClient;
 import org.matrix.androidsdk.rest.model.MatrixError;
 import org.matrix.androidsdk.rest.model.login.Credentials;
+import org.matrix.androidsdk.ssl.CertUtil;
+import org.matrix.androidsdk.ssl.Fingerprint;
+import org.matrix.androidsdk.ssl.UnrecognizedCertificateException;
 import org.matrix.console.Matrix;
 import org.matrix.console.R;
+
 
 /**
  * Displays the login screen.
  */
 public class LoginActivity extends MXCActionBarActivity {
-
     private static final String LOG_TAG = "LoginActivity";
     static final int ACCOUNT_CREATION_ACTIVITY_REQUEST_CODE = 314;
 
@@ -70,9 +75,9 @@ public class LoginActivity extends MXCActionBarActivity {
         mLoginButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                String username = ((EditText)findViewById(R.id.editText_username)).getText().toString().trim();
-                String password = ((EditText)findViewById(R.id.editText_password)).getText().toString().trim();
-                String hs = ((EditText)findViewById(R.id.editText_hs)).getText().toString().trim();
+                String username = ((EditText) findViewById(R.id.editText_username)).getText().toString().trim();
+                String password = ((EditText) findViewById(R.id.editText_password)).getText().toString().trim();
+                String hs = ((EditText) findViewById(R.id.editText_hs)).getText().toString().trim();
                 onLoginClick(hs, username, password);
             }
         });
@@ -103,8 +108,8 @@ public class LoginActivity extends MXCActionBarActivity {
         });
     }
 
-    private void onLoginClick(String hsUrl, String username, String password) {
-        if (!hsUrl.startsWith("http")) {
+    private void onLoginClick(String hsUrlString, String username, String password) {
+        if (!hsUrlString.startsWith("http")) {
             Toast.makeText(this, getString(R.string.login_error_must_start_http), Toast.LENGTH_SHORT).show();
             return;
         }
@@ -114,10 +119,16 @@ public class LoginActivity extends MXCActionBarActivity {
             return;
         }
 
-        LoginRestClient client = null;
+        if (!hsUrlString.startsWith("http://") && !hsUrlString.startsWith("https://")) {
+            hsUrlString = "https://" + hsUrlString;
+        }
 
+        Uri hsUrl = Uri.parse(hsUrlString);
+
+        LoginRestClient client = null;
+        final HomeserverConnectionConfig hsConfig = new HomeserverConnectionConfig(hsUrl);
         try {
-            client = new LoginRestClient(Uri.parse(hsUrl));
+            client = new LoginRestClient(hsConfig);
         } catch (Exception e) {
         }
 
@@ -133,7 +144,8 @@ public class LoginActivity extends MXCActionBarActivity {
             @Override
             public void onSuccess(Credentials credentials) {
                 Log.e(LOG_TAG, "client loginWithPassword succeeded.");
-                MXSession session = Matrix.getInstance(getApplicationContext()).createSession(credentials);
+                hsConfig.setCredentials(credentials);
+                MXSession session = Matrix.getInstance(getApplicationContext()).createSession(hsConfig);
                 Matrix.getInstance(getApplicationContext()).addSession(session);
                 goToSplash();
                 LoginActivity.this.finish();
@@ -141,8 +153,17 @@ public class LoginActivity extends MXCActionBarActivity {
 
             @Override
             public void onNetworkError(Exception e) {
+                Log.e(LOG_TAG, "Network Error: " + e.getMessage(), e);
                 mLoginButton.setEnabled(true);
                 mcreateAccountButton.setEnabled(true);
+
+                UnrecognizedCertificateException unrecCertEx = CertUtil.getCertificateException(e);
+                if (unrecCertEx != null) {
+                    final Fingerprint fingerprint = unrecCertEx.getFingerprint();
+                    Log.d(LOG_TAG, "Found fingerprint: SHA-256: " + fingerprint.getBytesAsHexString());
+                    // TODO: Handle this. For example by displaying a "Do you trust this cert?" dialog
+                }
+
                 Toast.makeText(getApplicationContext(), getString(R.string.login_error_network_error), Toast.LENGTH_LONG).show();
             }
 
@@ -158,7 +179,7 @@ public class LoginActivity extends MXCActionBarActivity {
             public void onMatrixError(MatrixError e) {
                 mLoginButton.setEnabled(true);
                 mcreateAccountButton.setEnabled(true);
-                String msg = getString(R.string.login_error_unable_login) + " : " + e.error + "("+e.errcode+")";
+                String msg = getString(R.string.login_error_unable_login) + " : " + e.error + "(" + e.errcode + ")";
                 Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_LONG).show();
             }
         });
@@ -177,6 +198,7 @@ public class LoginActivity extends MXCActionBarActivity {
         if (ACCOUNT_CREATION_ACTIVITY_REQUEST_CODE == requestCode) {
             if(resultCode == RESULT_OK){
                 String homeServer = data.getStringExtra("homeServer");
+                String homeServerUrl = data.getStringExtra("homeServerUrl");
                 String userId = data.getStringExtra("userId");
                 String accessToken = data.getStringExtra("accessToken");
 
@@ -186,10 +208,14 @@ public class LoginActivity extends MXCActionBarActivity {
                 credentials.homeServer = homeServer;
                 credentials.accessToken = accessToken;
 
+                final HomeserverConnectionConfig hsConfig = new HomeserverConnectionConfig(
+                    Uri.parse(homeServerUrl), credentials
+                );
+
                 Log.e(LOG_TAG, "Account creation succeeds");
 
                 // let's go...
-                MXSession session = Matrix.getInstance(getApplicationContext()).createSession(credentials);
+                MXSession session = Matrix.getInstance(getApplicationContext()).createSession(hsConfig);
                 Matrix.getInstance(getApplicationContext()).addSession(session);
                 goToSplash();
                 LoginActivity.this.finish();

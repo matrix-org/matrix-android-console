@@ -40,6 +40,8 @@ import android.view.View;
 import android.view.WindowManager;
 import android.webkit.WebView;
 
+import org.matrix.androidsdk.HomeserverConnectionConfig;
+import org.matrix.androidsdk.MXSession;
 import org.matrix.androidsdk.db.MXMediasCache;
 import org.matrix.androidsdk.fragments.IconAndTextDialogFragment;
 import org.matrix.androidsdk.util.ImageUtils;
@@ -59,6 +61,7 @@ public class ImageWebViewActivity extends FragmentActivity {
     public static final String KEY_HIGHRES_MIME_TYPE = "org.matrix.console.activity.ImageWebViewActivity.KEY_HIGHRES_MIME_TYPE";
     public static final String KEY_IMAGE_ROTATION = "org.matrix.console.activity.ImageWebViewActivity.KEY_IMAGE_ROTATION";
     public static final String KEY_IMAGE_ORIENTATION = "org.matrix.console.activity.ImageWebViewActivity.KEY_IMAGE_ORIENTATION";
+    public static final String EXTRA_MATRIX_ID = "org.matrix.console.activity.ImageWebViewActivity.EXTRA_MATRIX_ID";
 
     private WebView mWebView;
 
@@ -124,6 +127,16 @@ public class ImageWebViewActivity extends FragmentActivity {
         return css;
     }
 
+    /**
+     * Return the used MXSession from an intent.
+     * @param intent
+     * @return the MXsession if it exists.
+     */
+    private MXSession getSession(Intent intent) {
+        String matrixId = intent.getStringExtra(EXTRA_MATRIX_ID);
+        return Matrix.getInstance(getApplicationContext()).getSession(matrixId);
+    }
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         if (CommonActivityUtils.shouldRestartApp()) {
@@ -152,6 +165,9 @@ public class ImageWebViewActivity extends FragmentActivity {
             finish();
             return;
         }
+
+        MXSession session = getSession(intent);
+        HomeserverConnectionConfig hsConfig = session != null ? session.getHomeserverConfig() : null;
 
         final int thumbnailWidth = intent.getIntExtra(KEY_THUMBNAIL_WIDTH, 0);
         final int thumbnailHeight = intent.getIntExtra(KEY_THUMBNAIL_HEIGHT, 0);
@@ -192,7 +208,7 @@ public class ImageWebViewActivity extends FragmentActivity {
             final String loadingUri = mHighResUri;
             mThumbnailUri = mHighResUri = "file://" + mediaFile.getPath();
 
-            final String downloadId = mediasCache.loadBitmap(this, loadingUri, mRotationAngle, mOrientation, mHighResMimeType);
+            final String downloadId = mediasCache.loadBitmap(this, hsConfig, loadingUri, mRotationAngle, mOrientation, mHighResMimeType);
 
             if (null != downloadId) {
                 pieFractionView.setFraction(mediasCache.progressValueForDownloadId(downloadId));
