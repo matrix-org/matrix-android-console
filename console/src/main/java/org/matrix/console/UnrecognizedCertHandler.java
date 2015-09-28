@@ -34,6 +34,7 @@ public class UnrecognizedCertHandler {
 
 
         if (openDialogIds.contains(dialogId)) {
+            Log.i(LOG_TAG, "Not opening dialog " + dialogId + " as one is already open.");
             return;
         }
 
