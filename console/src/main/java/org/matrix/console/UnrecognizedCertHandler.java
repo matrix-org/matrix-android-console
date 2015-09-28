@@ -5,22 +5,39 @@ import android.app.Activity;
 import android.content.DialogInterface;
 import android.support.v7.app.AlertDialog;
 import android.view.LayoutInflater;
+import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
 import org.matrix.androidsdk.HomeserverConnectionConfig;
+import org.matrix.androidsdk.MXSession;
 import org.matrix.androidsdk.ssl.Fingerprint;
+import org.matrix.console.activity.CommonActivityUtils;
 
 import java.util.HashMap;
 import java.util.HashSet;
 
 public class UnrecognizedCertHandler {
+    private static final String LOG_TAG = "UnrecognizedCertHandler";
+
     private static HashMap<String, HashSet<Fingerprint>> ignoredFingerprints = new HashMap<String, HashSet<Fingerprint>>();
     private static HashSet<String> openDialogs = new HashSet<String>();
 
     public static void show(final HomeserverConnectionConfig hsConfig, final Fingerprint unrecognizedFingerprint, boolean existing, final Callback callback) {
-        Activity activity = ConsoleApplication.getInstance().getCurrentActivity();
+        final Activity activity = ConsoleApplication.getInstance().getCurrentActivity();
         if (activity == null) return;
+
+        final String dialogId;
+        if (hsConfig.getCredentials() != null) {
+            dialogId = hsConfig.getCredentials().userId;
+        } else {
+            dialogId = hsConfig.getHomeserverUri().toString();
+        }
+
+
+        if (openDialogs.contains(dialogId)) {
+            return;
+        }
 
         if (hsConfig.getCredentials() != null) {
             HashSet<Fingerprint> f = ignoredFingerprints.get(hsConfig.getCredentials().userId);
@@ -77,7 +94,7 @@ public class UnrecognizedCertHandler {
         });
 
         if (existing) {
-            builder.setNeutralButton(R.string.ssl_remain_offline, new DialogInterface.OnClickListener() {
+            builder.setNegativeButton(R.string.ssl_remain_offline, new DialogInterface.OnClickListener() {
                 public void onClick(DialogInterface dialog, int id) {
                     if (hsConfig.getCredentials() != null) {
                         HashSet<Fingerprint> f = ignoredFingerprints.get(hsConfig.getCredentials().userId);
@@ -92,7 +109,7 @@ public class UnrecognizedCertHandler {
                 }
             });
 
-            builder.setNegativeButton(R.string.ssl_logout_account, new DialogInterface.OnClickListener() {
+            builder.setNeutralButton(R.string.ssl_logout_account, new DialogInterface.OnClickListener() {
                 public void onClick(DialogInterface dialog, int id) {
                     callback.onReject();
                 }
@@ -105,8 +122,33 @@ public class UnrecognizedCertHandler {
             });
         }
 
-        AlertDialog dialog = builder.create();
+        final AlertDialog dialog = builder.create();
+
+        final EventEmitter.Listener<Activity> destroyListener = new EventEmitter.Listener<Activity>() {
+            @Override
+            public void onEventFired(EventEmitter<Activity> emitter, Activity destroyedActivity) {
+                if (activity == destroyedActivity) {
+                    Log.e(LOG_TAG, "Dismissed!");
+                    openDialogs.remove(dialogId);
+                    dialog.dismiss();
+                    emitter.unregister(this);
+                }
+            }
+        };
+
+        final EventEmitter<Activity> emitter = ConsoleApplication.getInstance().getOnActivityDestroyedListener();
+        emitter.register(destroyListener);
+
+        dialog.setOnDismissListener(new AlertDialog.OnDismissListener() {
+            public void onDismiss(DialogInterface dialog) {
+                Log.e(LOG_TAG, "Dismissed!");
+                openDialogs.remove(dialogId);
+                emitter.unregister(destroyListener);
+            }
+        });
+
         dialog.show();
+        openDialogs.add(dialogId);
     }
 
     public interface Callback {
