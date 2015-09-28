@@ -290,7 +290,7 @@
     <string name="ssl_cert_not_trust">This could mean that someone is maliciously intercepting your traffic, or that your phone does not trust the certificate provided by the remote server.</string>
     <string name="ssl_cert_new_account_expl">If the server administrator has said that this is expected, ensure that the fingerprint below matches the fingerprint provided by them.</string>
     <string name="ssl_unexpected_existing_expl">The certificate has changed from one that was trusted by your phone. This is HIGHLY UNUSUAL. It is recommended that you DO NOT ACCEPT this new certificate.</string>
-    <string name="ssl_expected_existing_expl">The certificate has changed from a previously trusted one. The server may have renewed its certificate. Contact the server administrator for the expected fingerprint.</string>
+    <string name="ssl_expected_existing_expl">The certificate has changed from a previously trusted one to one that is not trusted. The server may have renewed its certificate. Contact the server administrator for the expected fingerprint.</string>
     <string name="ssl_only_accept">ONLY accept the certificate if the server administrator has published a fingerprint that matches the one above.</string>
     <string name="ssl_fingerprint_example">00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00</string>
 
