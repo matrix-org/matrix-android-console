@@ -1,6 +1,8 @@
 package org.matrix.console;
 
 
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 
 import java.util.HashSet;
@@ -23,15 +25,28 @@ public class EventEmitter<T> {
         mCallbacks.remove(cb);
     }
 
-    public void fire(T t) {
-        Set<Listener<T>> callbacks = new HashSet<>(mCallbacks);
-        for (Listener<T> cb : callbacks) {
-            try {
-                cb.onEventFired(this, t);
-            } catch(Exception e) {
-                Log.e(LOG_TAG, "Callback threw: " + e.getMessage(), e);
-            }
-        }
+    /**
+     * Fires all registered callbacks on the UI thread.
+     * @param t
+     */
+    public void fire(final T t) {
+        final Set<Listener<T>> callbacks = new HashSet<>(mCallbacks);
+
+        Looper looper = Looper.getMainLooper();
+        Handler uiHandler = new Handler(looper);
+        uiHandler.post(new Runnable() {
+               @Override
+               public void run() {
+                   for (Listener<T> cb : callbacks) {
+                       try {
+                           cb.onEventFired(EventEmitter.this, t);
+                       } catch (Exception e) {
+                           Log.e(LOG_TAG, "Callback threw: " + e.getMessage(), e);
+                       }
+                   }
+               }
+           }
+        );
     }
 
     public interface Listener<T> {
