@@ -20,8 +20,8 @@ import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.v4.app.FragmentManager;
 import android.text.TextUtils;
-import android.util.Base64;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -31,12 +31,9 @@ import android.widget.Toast;
 import org.matrix.androidsdk.HomeserverConnectionConfig;
 import org.matrix.androidsdk.MXSession;
 import org.matrix.androidsdk.rest.callback.SimpleApiCallback;
-import org.matrix.androidsdk.rest.client.LoginRestClient;
 import org.matrix.androidsdk.rest.model.MatrixError;
 import org.matrix.androidsdk.rest.model.login.Credentials;
-import org.matrix.androidsdk.ssl.CertUtil;
-import org.matrix.androidsdk.ssl.Fingerprint;
-import org.matrix.androidsdk.ssl.UnrecognizedCertificateException;
+import org.matrix.console.LoginHandler;
 import org.matrix.console.Matrix;
 import org.matrix.console.R;
 
@@ -45,6 +42,8 @@ import org.matrix.console.R;
  * Displays the login screen.
  */
 public class LoginActivity extends MXCActionBarActivity {
+    protected static final String TAG_FRAGMENT_SSL_FINGERPRINT = "org.matrix.androidsdk.RoomActivity.TAG_FRAGMENT_SSL_FINGERPRINT";
+
     private static final String LOG_TAG = "LoginActivity";
     static final int ACCOUNT_CREATION_ACTIVITY_REQUEST_CODE = 314;
 
@@ -124,65 +123,47 @@ public class LoginActivity extends MXCActionBarActivity {
         }
 
         Uri hsUrl = Uri.parse(hsUrlString);
-
-        LoginRestClient client = null;
         final HomeserverConnectionConfig hsConfig = new HomeserverConnectionConfig(hsUrl);
-        try {
-            client = new LoginRestClient(hsConfig);
-        } catch (Exception e) {
-        }
-
-        if (null == client) {
-            Toast.makeText(this, getString(R.string.login_error_invalid_home_server), Toast.LENGTH_SHORT).show();
-            return;
-        }
 
         mLoginButton.setEnabled(false);
         mcreateAccountButton.setEnabled(false);
 
-        client.loginWithPassword(username, password, new SimpleApiCallback<Credentials>(this) {
-            @Override
-            public void onSuccess(Credentials credentials) {
-                Log.e(LOG_TAG, "client loginWithPassword succeeded.");
-                hsConfig.setCredentials(credentials);
-                MXSession session = Matrix.getInstance(getApplicationContext()).createSession(hsConfig);
-                Matrix.getInstance(getApplicationContext()).addSession(session);
-                goToSplash();
-                LoginActivity.this.finish();
-            }
-
-            @Override
-            public void onNetworkError(Exception e) {
-                Log.e(LOG_TAG, "Network Error: " + e.getMessage(), e);
-                mLoginButton.setEnabled(true);
-                mcreateAccountButton.setEnabled(true);
-
-                UnrecognizedCertificateException unrecCertEx = CertUtil.getCertificateException(e);
-                if (unrecCertEx != null) {
-                    final Fingerprint fingerprint = unrecCertEx.getFingerprint();
-                    Log.d(LOG_TAG, "Found fingerprint: SHA-256: " + fingerprint.getBytesAsHexString());
-                    // TODO: Handle this. For example by displaying a "Do you trust this cert?" dialog
+        try {
+            LoginHandler loginHandler = new LoginHandler();
+            loginHandler.login(this, hsConfig, username, password, new SimpleApiCallback<HomeserverConnectionConfig>(this) {
+                @Override
+                public void onSuccess(HomeserverConnectionConfig c) {
+                    goToSplash();
+                    LoginActivity.this.finish();
                 }
 
-                Toast.makeText(getApplicationContext(), getString(R.string.login_error_network_error), Toast.LENGTH_LONG).show();
-            }
+                @Override
+                public void onNetworkError(Exception e) {
+                    Log.e(LOG_TAG, "Network Error: " + e.getMessage(), e);
+                    mLoginButton.setEnabled(true);
+                    mcreateAccountButton.setEnabled(true);
+                    Toast.makeText(getApplicationContext(), getString(R.string.login_error_network_error), Toast.LENGTH_LONG).show();
+                }
 
-            @Override
-            public void onUnexpectedError(Exception e) {
-                mLoginButton.setEnabled(true);
-                mcreateAccountButton.setEnabled(true);
-                String msg = getString(R.string.login_error_unable_login) + " : " + e.getMessage();
-                Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_LONG).show();
-            }
+                @Override
+                public void onUnexpectedError(Exception e) {
+                    mLoginButton.setEnabled(true);
+                    mcreateAccountButton.setEnabled(true);
+                    String msg = getString(R.string.login_error_unable_login) + " : " + e.getMessage();
+                    Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_LONG).show();
+                }
 
-            @Override
-            public void onMatrixError(MatrixError e) {
-                mLoginButton.setEnabled(true);
-                mcreateAccountButton.setEnabled(true);
-                String msg = getString(R.string.login_error_unable_login) + " : " + e.error + "(" + e.errcode + ")";
-                Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_LONG).show();
-            }
-        });
+                @Override
+                public void onMatrixError(MatrixError e) {
+                    mLoginButton.setEnabled(true);
+                    mcreateAccountButton.setEnabled(true);
+                    String msg = getString(R.string.login_error_unable_login) + " : " + e.error + "(" + e.errcode + ")";
+                    Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_LONG).show();
+                }
+            });
+        } catch (Exception e) {
+            Toast.makeText(this, getString(R.string.login_error_invalid_home_server), Toast.LENGTH_SHORT).show();
+        }
     }
 
     private boolean hasCredentials() {

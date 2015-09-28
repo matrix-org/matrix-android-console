@@ -140,6 +140,13 @@ public class MXCActionBarActivity extends ActionBarActivity {
     }
 
     @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+        ConsoleApplication.getInstance().getOnActivityDestroyedListener().fire(this);
+    }
+
+    @Override
     protected void onResume() {
         super.onResume();
         // refresh the push rules when debackgrounding the application

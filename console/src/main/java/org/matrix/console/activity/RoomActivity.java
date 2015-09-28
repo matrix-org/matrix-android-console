@@ -735,7 +735,7 @@ public class RoomActivity extends MXCActionBarActivity {
         mRoom.addEventListener(mEventListener);
 
         // The error listener needs the current activity
-        mSession.setFailureCallback(new ErrorListener(this));
+        mSession.setFailureCallback(new ErrorListener(mSession, this));
 
         mImagePreviewLayout = findViewById(R.id.room_image_preview_layout);
         mImagePreviewView   = (ImageView)findViewById(R.id.room_image_preview);

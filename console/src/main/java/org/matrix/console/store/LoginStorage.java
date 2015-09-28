@@ -84,6 +84,8 @@ public class LoginStorage {
 
         String connectionConfigsString = prefs.getString(PREFS_KEY_CONNECTION_CONFIGS, null);
 
+        Log.d(LOG_TAG, "Got connection json: " + connectionConfigsString);
+
         if (connectionConfigsString == null) {
             return new ArrayList<HomeserverConnectionConfig>();
         }
@@ -114,7 +116,7 @@ public class LoginStorage {
      * @param config the HomeserverConnectionConfig to add.
      */
     public void addCredentials(HomeserverConnectionConfig config) {
-        if (null != config) {
+        if (null != config && config.getCredentials() != null) {
             SharedPreferences prefs = mContext.getSharedPreferences(PREFS_LOGIN, Context.MODE_PRIVATE);
             SharedPreferences.Editor editor = prefs.edit();
 
@@ -132,7 +134,11 @@ public class LoginStorage {
                 throw new RuntimeException("Failed to serialize connection config");
             }
 
-            editor.putString(PREFS_KEY_CONNECTION_CONFIGS, new JSONArray(serialized).toString());
+            String ser = new JSONArray(serialized).toString();
+
+            Log.d(LOG_TAG, "Storing " + serialized.size() + " credentials");
+
+            editor.putString(PREFS_KEY_CONNECTION_CONFIGS, ser);
             editor.commit();
         }
     }
@@ -140,10 +146,11 @@ public class LoginStorage {
     /**
      * Remove the credentials from credentials list
      * @param config the credentials to remove
-     * @return
      */
     public void removeCredentials(HomeserverConnectionConfig config) {
-        if (null != config) {
+        if (null != config && config.getCredentials() != null) {
+            Log.d(LOG_TAG, "Removing account: " + config.getCredentials().userId);
+
             SharedPreferences prefs = mContext.getSharedPreferences(PREFS_LOGIN, Context.MODE_PRIVATE);
             SharedPreferences.Editor editor = prefs.edit();
 
@@ -165,7 +172,49 @@ public class LoginStorage {
 
             if (!found) return;
 
-            editor.putString(PREFS_KEY_CONNECTION_CONFIGS, new JSONArray(serialized).toString());
+            String ser = new JSONArray(serialized).toString();
+
+            Log.d(LOG_TAG, "Storing " + serialized.size() + " credentials");
+
+            editor.putString(PREFS_KEY_CONNECTION_CONFIGS, ser);
+            editor.commit();
+        }
+    }
+
+    /**
+     * Replace the credential from credentials list, based on credentials.userId.
+     * If it does not match an existing credential it does *not* insert the new credentials.
+     * @param config the credentials to insert
+     */
+    public void replaceCredentials(HomeserverConnectionConfig config) {
+        if (null != config && config.getCredentials() != null) {
+            SharedPreferences prefs = mContext.getSharedPreferences(PREFS_LOGIN, Context.MODE_PRIVATE);
+            SharedPreferences.Editor editor = prefs.edit();
+
+            ArrayList<HomeserverConnectionConfig> configs = getCredentialsList();
+            ArrayList<JSONObject> serialized = new ArrayList<JSONObject>(configs.size());
+
+            boolean found = false;
+            try {
+                for (HomeserverConnectionConfig c : configs) {
+                    if (c.getCredentials().userId.equals(config.getCredentials().userId)) {
+                        serialized.add(config.toJson());
+                        found = true;
+                    } else {
+                        serialized.add(c.toJson());
+                    }
+                }
+            } catch (JSONException e) {
+                throw new RuntimeException("Failed to serialize connection config");
+            }
+
+            if (!found) return;
+
+            String ser = new JSONArray(serialized).toString();
+
+            Log.d(LOG_TAG, "Storing " + serialized.size() + " credentials");
+
+            editor.putString(PREFS_KEY_CONNECTION_CONFIGS, ser);
             editor.commit();
         }
     }

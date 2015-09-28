@@ -50,6 +50,10 @@ public class Matrix {
         return instance;
     }
 
+    public LoginStorage getLoginStorage() {
+        return mLoginStorage;
+    }
+
     /**
      * Static method top the MXSession list
      * @param context the application content

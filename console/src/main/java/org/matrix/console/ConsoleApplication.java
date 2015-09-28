@@ -17,9 +17,6 @@
 package org.matrix.console;
 import android.app.Activity;
 import android.app.Application;
-import android.content.Context;
-import android.content.Intent;
-import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.os.Build;
@@ -27,22 +24,16 @@ import android.text.TextUtils;
 import android.util.Log;
 
 import com.google.android.gms.analytics.ExceptionParser;
-import com.google.android.gms.analytics.ExceptionReporter;
 import com.google.android.gms.analytics.GoogleAnalytics;
-import com.google.android.gms.analytics.HitBuilders;
-import com.google.android.gms.analytics.Tracker;
 
-import org.matrix.androidsdk.rest.model.LocationMessage;
 import org.matrix.console.activity.CallViewActivity;
 import org.matrix.console.activity.CommonActivityUtils;
-import org.matrix.console.adapters.ConsoleMessagesAdapter;
 import org.matrix.console.contacts.ContactsManager;
 import org.matrix.console.contacts.PIDsRetriever;
 import org.matrix.console.ga.Analytics;
 import org.matrix.console.services.EventStreamService;
 import org.matrix.console.util.LogUtilities;
 
-import java.io.Console;
 import java.io.File;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -67,11 +58,15 @@ public class ConsoleApplication extends Application {
 
     private static ConsoleApplication instance = null;
 
+    private EventEmitter<Activity> mOnActivityDestroyedListener;
+
     @Override
     public void onCreate() {
         super.onCreate();
 
         instance = this;
+
+        mOnActivityDestroyedListener = new EventEmitter<>();
 
         mActivityTransitionTimer = null;
         mActivityTransitionTimerTask = null;
@@ -97,6 +92,10 @@ public class ConsoleApplication extends Application {
 
     public static ConsoleApplication getInstance() {
         return instance;
+    }
+
+    public EventEmitter<Activity> getOnActivityDestroyedListener() {
+        return mOnActivityDestroyedListener;
     }
 
     /**
