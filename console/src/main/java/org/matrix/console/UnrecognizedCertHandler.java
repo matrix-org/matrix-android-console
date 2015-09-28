@@ -10,9 +10,7 @@ import android.view.View;
 import android.widget.TextView;
 
 import org.matrix.androidsdk.HomeserverConnectionConfig;
-import org.matrix.androidsdk.MXSession;
 import org.matrix.androidsdk.ssl.Fingerprint;
-import org.matrix.console.activity.CommonActivityUtils;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -21,7 +19,7 @@ public class UnrecognizedCertHandler {
     private static final String LOG_TAG = "UnrecognizedCertHandler";
 
     private static HashMap<String, HashSet<Fingerprint>> ignoredFingerprints = new HashMap<String, HashSet<Fingerprint>>();
-    private static HashSet<String> openDialogs = new HashSet<String>();
+    private static HashSet<String> openDialogIds = new HashSet<String>();
 
     public static void show(final HomeserverConnectionConfig hsConfig, final Fingerprint unrecognizedFingerprint, boolean existing, final Callback callback) {
         final Activity activity = ConsoleApplication.getInstance().getCurrentActivity();
@@ -35,7 +33,7 @@ public class UnrecognizedCertHandler {
         }
 
 
-        if (openDialogs.contains(dialogId)) {
+        if (openDialogIds.contains(dialogId)) {
             return;
         }
 
@@ -129,7 +127,7 @@ public class UnrecognizedCertHandler {
             public void onEventFired(EventEmitter<Activity> emitter, Activity destroyedActivity) {
                 if (activity == destroyedActivity) {
                     Log.e(LOG_TAG, "Dismissed!");
-                    openDialogs.remove(dialogId);
+                    openDialogIds.remove(dialogId);
                     dialog.dismiss();
                     emitter.unregister(this);
                 }
@@ -142,13 +140,13 @@ public class UnrecognizedCertHandler {
         dialog.setOnDismissListener(new AlertDialog.OnDismissListener() {
             public void onDismiss(DialogInterface dialog) {
                 Log.e(LOG_TAG, "Dismissed!");
-                openDialogs.remove(dialogId);
+                openDialogIds.remove(dialogId);
                 emitter.unregister(destroyListener);
             }
         });
 
         dialog.show();
-        openDialogs.add(dialogId);
+        openDialogIds.add(dialogId);
     }
 
     public interface Callback {
