@@ -136,7 +136,7 @@ public class LoginStorage {
 
             String ser = new JSONArray(serialized).toString();
 
-            Log.d(LOG_TAG, "Setting connection json: " + ser);
+            Log.d(LOG_TAG, "Storing " + serialized.size() + " credentials");
 
             editor.putString(PREFS_KEY_CONNECTION_CONFIGS, ser);
             editor.commit();
@@ -145,7 +145,7 @@ public class LoginStorage {
 
     /**
      * Remove the credentials from credentials list
-     * @param config teh credentials to remove
+     * @param config the credentials to remove
      */
     public void removeCredentials(HomeserverConnectionConfig config) {
         if (null != config && config.getCredentials() != null) {
@@ -174,7 +174,7 @@ public class LoginStorage {
 
             String ser = new JSONArray(serialized).toString();
 
-            Log.d(LOG_TAG, "Setting connection json: " + ser);
+            Log.d(LOG_TAG, "Storing " + serialized.size() + " credentials");
 
             editor.putString(PREFS_KEY_CONNECTION_CONFIGS, ser);
             editor.commit();
@@ -212,7 +212,7 @@ public class LoginStorage {
 
             String ser = new JSONArray(serialized).toString();
 
-            Log.d(LOG_TAG, "Setting connection json: " + ser);
+            Log.d(LOG_TAG, "Storing " + serialized.size() + " credentials");
 
             editor.putString(PREFS_KEY_CONNECTION_CONFIGS, ser);
             editor.commit();

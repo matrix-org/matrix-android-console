@@ -56,6 +56,19 @@ public class LogUtilities {
                 "VelocityTracker:S",
                 "MaliEGL:S",
                 "GraphicBuffer:S",
+                "WifiStateMachine:S",
+                "ActivityThread:S",
+                "PowerManagerService:S",
+                "BufferQueue:S",
+                "KeyguardUpdateMonitor:S",
+                "wpa_supplicant:S",
+                "ANRManager:S",
+                "InputReader:S",
+                "PowerUI:S",
+                "BatteryService:S",
+                "qdhwcomposer:S",
+                "ServiceDumpSys:S",
+                "DisplayPowerController:S",
                 "*:*"
     };
 
