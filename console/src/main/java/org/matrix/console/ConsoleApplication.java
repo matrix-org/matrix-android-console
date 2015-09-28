@@ -94,7 +94,7 @@ public class ConsoleApplication extends Application {
         return instance;
     }
 
-    public  EventEmitter<Activity> getOnActivityDestroyedListener() {
+    public EventEmitter<Activity> getOnActivityDestroyedListener() {
         return mOnActivityDestroyedListener;
     }
 
