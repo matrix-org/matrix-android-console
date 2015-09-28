@@ -180,6 +180,8 @@ public class HomeActivity extends MXCActionBarActivity {
     private void refreshPublicRoomsList(final ArrayList<MXSession> sessions, final ArrayList<String> checkedHomeServers, final int index, final ArrayList<List<PublicRoom>> publicRoomsListList) {
         // sanity checks
         if ((null == sessions) || (index >= sessions.size())) {
+            Log.d(LOG_TAG, "notifyDataSetChanged after the public rooms update.");
+
             mAdapter.setPublicRoomsList(publicRoomsListList, checkedHomeServers);
             mAdapter.notifyDataSetChanged();
             mPublicRoomsListList = publicRoomsListList;
@@ -633,6 +635,7 @@ public class HomeActivity extends MXCActionBarActivity {
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
+                        Log.d(LOG_TAG, "onLiveEventsChunkProcessed");
                         if (!mIsPaused && refreshOnChunkEnd) {
                             mAdapter.sortSummaries();
                             mAdapter.notifyDataSetChanged();
