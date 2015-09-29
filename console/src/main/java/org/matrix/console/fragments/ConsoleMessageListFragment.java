@@ -379,7 +379,13 @@ public class ConsoleMessageListFragment extends MatrixMessageListFragment {
             }
         });
 
-        fragment.show(fm, TAG_FRAGMENT_MESSAGE_OPTIONS);
+        // GA issue
+        // can not perform this action after onSaveInstanceState....
+        // it seems that the linked activity is stopped.
+        try {
+            fragment.show(fm, TAG_FRAGMENT_MESSAGE_OPTIONS);
+        } catch (Exception e) {
+        }
     }
 
     public Boolean onRowLongClick(int position) {
@@ -586,6 +592,13 @@ public class ConsoleMessageListFragment extends MatrixMessageListFragment {
                         }
                     }
                 });
-        builderSingle.show();
+
+        // GA issue
+        // can not perform this action after onSaveInstanceState....
+        // it seems that the linked activity is stopped.
+        try {
+            builderSingle.show();
+        } catch (Exception e) {
+        }
     }
 }
