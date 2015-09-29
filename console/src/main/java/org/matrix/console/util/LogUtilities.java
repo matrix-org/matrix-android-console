@@ -69,6 +69,9 @@ public class LogUtilities {
                 "qdhwcomposer:S",
                 "ServiceDumpSys:S",
                 "DisplayPowerController:S",
+                "View:S",
+                "ListView:S",
+                "Posix:S",
                 "*:*"
     };
 
