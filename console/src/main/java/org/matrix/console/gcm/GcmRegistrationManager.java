@@ -519,17 +519,19 @@ public final class GcmRegistrationManager {
                             }
 
                             private void onError(final String message) {
-                                mUIHandler.post(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        Toast.makeText(mContext, "fail to unregister " + session.getMyUser().userId + " (" + message +")", Toast.LENGTH_LONG).show();
-                                    }
-                                });
+                                if (session.isActive()) {
+                                    mUIHandler.post(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            Toast.makeText(mContext, "fail to unregister " + session.getMyUser().userId + " (" + message + ")", Toast.LENGTH_LONG).show();
+                                        }
+                                    });
 
-                                if (null != listener) {
-                                    try {
-                                        listener.onSessionUnregistrationFailed();
-                                    } catch (Exception e) {
+                                    if (null != listener) {
+                                        try {
+                                            listener.onSessionUnregistrationFailed();
+                                        } catch (Exception e) {
+                                        }
                                     }
                                 }
                             }
