@@ -68,6 +68,7 @@ import org.matrix.androidsdk.rest.model.login.Credentials;
 import org.matrix.androidsdk.util.EventUtils;
 import org.matrix.androidsdk.util.JsonUtils;
 import org.matrix.console.ConsoleApplication;
+import org.matrix.console.LoginHandler;
 import org.matrix.console.Matrix;
 import org.matrix.console.MyPresenceManager;
 import org.matrix.console.R;
@@ -1257,46 +1258,57 @@ public class HomeActivity extends MXCActionBarActivity {
                             return;
                         }
 
-                        client.loginWithPassword(username, password, new SimpleApiCallback<Credentials>(HomeActivity.this) {
-                            @Override
-                            public void onSuccess(Credentials credentials) {
-                                // check if there is active sessions with the same credentials.
-                                Collection<MXSession> sessions = Matrix.getMXSessions(HomeActivity.this);
+                        try {
+                            LoginHandler loginHandler = new LoginHandler();
+                            loginHandler.login(HomeActivity.this, hsConfig, username, password, new SimpleApiCallback<HomeserverConnectionConfig>(HomeActivity.this) {
+                                @Override
+                                public void onSuccess(HomeserverConnectionConfig c) {
+                                    // check if there is active sessions with the same credentials.
+                                    Collection<MXSession> sessions = Matrix.getMXSessions(HomeActivity.this);
 
-                                Boolean isDuplicated = false;
+                                    Boolean isDuplicated = false;
 
-                                for (MXSession existingSession : sessions) {
-                                    isDuplicated |= (existingSession.getCredentials().userId.equals(credentials.userId));
+                                    String userId = c.getCredentials().userId;
+                                    String homeServer = c.getCredentials().homeServer;
+
+                                    for (MXSession existingSession : sessions) {
+                                        Credentials cred = existingSession.getCredentials();
+
+                                        isDuplicated |= TextUtils.equals(userId, cred.userId) && TextUtils.equals(homeServer, cred.homeServer);
+                                    }
+
+                                    if (isDuplicated) {
+                                        Toast.makeText(getApplicationContext(), getString(R.string.login_error_already_logged_in), Toast.LENGTH_LONG).show();
+                                    } else {
+                                        hsConfig.setCredentials(c.getCredentials());
+                                        MXSession session = Matrix.getInstance(getApplicationContext()).createSession(hsConfig);
+                                        Matrix.getInstance(getApplicationContext()).addSession(session);
+                                        startActivity(new Intent(HomeActivity.this, SplashActivity.class));
+                                        HomeActivity.this.finish();
+                                    }
                                 }
 
-                                if (isDuplicated) {
-                                    Toast.makeText(getApplicationContext(), getString(R.string.login_error_already_logged_in), Toast.LENGTH_LONG).show();
-                                } else {
-                                    hsConfig.setCredentials(credentials);
-                                    MXSession session = Matrix.getInstance(getApplicationContext()).createSession(hsConfig);
-                                    Matrix.getInstance(getApplicationContext()).addSession(session);
-                                    startActivity(new Intent(HomeActivity.this, SplashActivity.class));
-                                    HomeActivity.this.finish();
+                                @Override
+                                public void onNetworkError(Exception e) {
+                                    Log.e(LOG_TAG, "Network Error: " + e.getMessage(), e);
+                                    Toast.makeText(getApplicationContext(), getString(R.string.login_error_network_error), Toast.LENGTH_LONG).show();
                                 }
-                            }
 
-                            @Override
-                            public void onNetworkError(Exception e) {
-                                Toast.makeText(getApplicationContext(), getString(R.string.login_error_network_error), Toast.LENGTH_LONG).show();
-                            }
+                                @Override
+                                public void onUnexpectedError(Exception e) {
+                                    String msg = getString(R.string.login_error_unable_login) + " : " + e.getMessage();
+                                    Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_LONG).show();
+                                }
 
-                            @Override
-                            public void onUnexpectedError(Exception e) {
-                                String msg = getString(R.string.login_error_unable_login) + " : " + e.getMessage();
-                                Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_LONG).show();
-                            }
-
-                            @Override
-                            public void onMatrixError(MatrixError e) {
-                                String msg = getString(R.string.login_error_unable_login) + " : " + e.error + "(" + e.errcode + ")";
-                                Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_LONG).show();
-                            }
-                        });
+                                @Override
+                                public void onMatrixError(MatrixError e) {
+                                    String msg = getString(R.string.login_error_unable_login) + " : " + e.error + "(" + e.errcode + ")";
+                                    Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_LONG).show();
+                                }
+                            });
+                        } catch (Exception e) {
+                            Toast.makeText(HomeActivity.this, getString(R.string.login_error_invalid_home_server), Toast.LENGTH_SHORT).show();
+                        }
 
                     }
                 }).setNegativeButton(R.string.cancel,
