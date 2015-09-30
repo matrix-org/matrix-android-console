@@ -48,6 +48,7 @@
         android:layout_height="wrap_content"
         android:text="QR Code"
         android:id="@+id/button_qr"
+        android:visibility="gone"
         android:layout_gravity="center_horizontal"/>
     <Button
         android:layout_width="match_parent"
