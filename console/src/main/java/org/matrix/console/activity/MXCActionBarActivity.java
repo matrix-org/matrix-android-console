@@ -125,6 +125,7 @@ public class MXCActionBarActivity extends ActionBarActivity {
     protected void onPause() {
         super.onPause();
         ConsoleApplication.setCurrentActivity(null);
+        Matrix.removeSessionErrorListener(this);
 
         // close any opened dialog
         FragmentManager fm = getSupportFragmentManager();
@@ -162,6 +163,7 @@ public class MXCActionBarActivity extends ActionBarActivity {
         }
 
         ConsoleApplication.setCurrentActivity(this);
+        Matrix.setSessionErrorListener(this);
     }
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
