@@ -28,7 +28,6 @@ import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.media.ExifInterface;
-import android.media.ThumbnailUtils;
 import android.net.Uri;
 import android.os.Build;
 import android.os.HandlerThread;
@@ -733,9 +732,6 @@ public class RoomActivity extends MXCActionBarActivity {
 
         // listen for room name or topic changes
         mRoom.addEventListener(mEventListener);
-
-        // The error listener needs the current activity
-        mSession.setFailureCallback(new ErrorListener(mSession, this));
 
         mImagePreviewLayout = findViewById(R.id.room_image_preview_layout);
         mImagePreviewView   = (ImageView)findViewById(R.id.room_image_preview);

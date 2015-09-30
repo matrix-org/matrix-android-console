@@ -20,6 +20,7 @@ import org.matrix.console.store.LoginStorage;
 import org.matrix.console.util.RageShake;
 
 import java.util.ArrayList;
+import java.util.Collection;
 
 /**
  * Singleton to control access to the Matrix SDK and providing point of control for MXSessions.
@@ -154,6 +155,37 @@ public class Matrix {
         }
 
         return getDefaultSession();
+    }
+
+    /**
+     * Add an error listener to each sessions
+     * @param activity the activity.
+     */
+    public static void setSessionErrorListener(Activity activity) {
+        if ((null != instance) && (null != activity)) {
+            Collection<MXSession> sessions = getMXSessions(activity);
+
+            for(MXSession session : sessions) {
+                if (session.isActive()) {
+                    session.setFailureCallback(new ErrorListener(session, activity));
+                }
+            }
+        }
+    }
+
+    /**
+     * Remove the sessions error listener to each
+     */
+    public static void removeSessionErrorListener(Activity activity) {
+        if ((null != instance) && (null != activity)) {
+            Collection<MXSession> sessions = getMXSessions(activity);
+
+            for(MXSession session : sessions) {
+                if (session.isActive()) {
+                    session.setFailureCallback(null);
+                }
+            }
+        }
     }
 
     /**

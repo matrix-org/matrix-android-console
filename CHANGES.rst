@@ -1,3 +1,26 @@
+Changes in Console 0.5.1 (2015-09-30)
+===================================================
+
+Improvements:
+ * The catchup should be faster. 
+
+Features:
+ * Add video messages support.
+ * Add self signed cert support.
+
+Bug fixes:
+ * SYAND-125 : the pusher url should be HTTPS not HTTP.
+ * The captured video/photo was lost after rotating the device.
+ * The application was suspended in some call race conditions.
+ * The call ring was not stopped when the call was cancelled with a backgrounded application.
+ * Many crashes when the application is logging out.
+
+Changes in Console 0.5.0 (2015-09-10)
+===================================================
+
+Bug fixes:
+ * Remove the camera feature requirements
+ * Remove the OpenGL feature requirements.
 
 Changes in Console 0.4.4 (2015-09-07)
 ===================================================
