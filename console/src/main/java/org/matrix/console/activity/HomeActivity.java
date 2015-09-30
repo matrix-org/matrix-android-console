@@ -191,24 +191,30 @@ public class HomeActivity extends MXCActionBarActivity {
         }
 
         final MXSession session = sessions.get(index);
-        final String homeServerUrl = session.getHomeserverConfig().getHomeserverUri().toString();
 
-        // the home server has already been checked ?
-        if (checkedHomeServers.indexOf(homeServerUrl) >= 0) {
-            // jump to the next session
-            refreshPublicRoomsList(sessions, checkedHomeServers, index + 1, publicRoomsListList);
+        // check if the session is still active
+        if (session.isActive()) {
+            final String homeServerUrl = session.getHomeserverConfig().getHomeserverUri().toString();
+
+            // the home server has already been checked ?
+            if (checkedHomeServers.indexOf(homeServerUrl) >= 0) {
+                // jump to the next session
+                refreshPublicRoomsList(sessions, checkedHomeServers, index + 1, publicRoomsListList);
+            } else {
+                // use any session to get the public rooms list
+                session.getEventsApiClient().loadPublicRooms(new SimpleApiCallback<List<PublicRoom>>(this) {
+                    @Override
+                    public void onSuccess(List<PublicRoom> publicRooms) {
+                        checkedHomeServers.add(homeServerUrl);
+                        publicRoomsListList.add(publicRooms);
+
+                        // jump to the next session
+                        refreshPublicRoomsList(sessions, checkedHomeServers, index + 1, publicRoomsListList);
+                    }
+                });
+            }
         } else {
-            // use any session to get the public rooms list
-            session.getEventsApiClient().loadPublicRooms(new SimpleApiCallback<List<PublicRoom>>(this) {
-                @Override
-                public void onSuccess(List<PublicRoom> publicRooms) {
-                    checkedHomeServers.add(homeServerUrl);
-                    publicRoomsListList.add(publicRooms);
-
-                    // jump to the next session
-                    refreshPublicRoomsList(sessions, checkedHomeServers, index + 1, publicRoomsListList);
-                }
-            });
+            refreshPublicRoomsList(sessions, checkedHomeServers, index + 1, publicRoomsListList);
         }
     }
 
