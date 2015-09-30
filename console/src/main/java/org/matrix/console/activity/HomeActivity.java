@@ -1243,20 +1243,6 @@ public class HomeActivity extends MXCActionBarActivity {
                             return;
                         }
 
-                        // check if there is active sessions with the same credentials.
-                        Collection<MXSession> sessions = Matrix.getMXSessions(HomeActivity.this);
-                        Boolean isDuplicated = false;
-
-                        for (MXSession existingSession : sessions) {
-                            Credentials cred = existingSession.getCredentials();
-                            isDuplicated |= TextUtils.equals(username, cred.userId) && TextUtils.equals(hsUrlString, cred.homeServer);
-                        }
-
-                        if (isDuplicated) {
-                            Toast.makeText(getApplicationContext(), getString(R.string.login_error_already_logged_in), Toast.LENGTH_LONG).show();
-                            return;
-                        }
-
                         Uri hsUrl = Uri.parse(hsUrlString);
 
                         LoginRestClient client = null;
