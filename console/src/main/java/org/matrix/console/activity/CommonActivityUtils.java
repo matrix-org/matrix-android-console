@@ -56,6 +56,7 @@ import org.matrix.console.contacts.ContactsManager;
 import org.matrix.console.contacts.PIDsRetriever;
 import org.matrix.console.fragments.AccountsSelectionDialogFragment;
 import org.matrix.console.services.EventStreamService;
+import org.matrix.console.store.LoginStorage;
 import org.matrix.console.util.RageShake;
 
 import java.io.File;
@@ -140,6 +141,9 @@ public class CommonActivityUtils {
 
         // reset the GCM
         Matrix.getInstance(activity).getSharedGcmRegistrationManager().reset();
+
+        // ensure that corrupted values are cleared
+        Matrix.getInstance(activity).getLoginStorage().clear();
 
         // reset the contacts
         PIDsRetriever.getIntance().reset();
