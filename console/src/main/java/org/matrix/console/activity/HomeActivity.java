@@ -1243,6 +1243,20 @@ public class HomeActivity extends MXCActionBarActivity {
                             return;
                         }
 
+                        // check if there is active sessions with the same credentials.
+                        Collection<MXSession> sessions = Matrix.getMXSessions(HomeActivity.this);
+                        Boolean isDuplicated = false;
+
+                        for (MXSession existingSession : sessions) {
+                            Credentials cred = existingSession.getCredentials();
+                            isDuplicated |= TextUtils.equals(username, cred.userId) && TextUtils.equals(hsUrlString, cred.homeServer);
+                        }
+
+                        if (isDuplicated) {
+                            Toast.makeText(getApplicationContext(), getString(R.string.login_error_already_logged_in), Toast.LENGTH_LONG).show();
+                            return;
+                        }
+
                         Uri hsUrl = Uri.parse(hsUrlString);
 
                         LoginRestClient client = null;
@@ -1263,27 +1277,9 @@ public class HomeActivity extends MXCActionBarActivity {
                             loginHandler.login(HomeActivity.this, hsConfig, username, password, new SimpleApiCallback<HomeserverConnectionConfig>(HomeActivity.this) {
                                 @Override
                                 public void onSuccess(HomeserverConnectionConfig c) {
-                                    // check if there is active sessions with the same credentials.
-                                    Collection<MXSession> sessions = Matrix.getMXSessions(HomeActivity.this);
-
-                                    Boolean isDuplicated = false;
-
-                                    String userId = c.getCredentials().userId;
-                                    String homeServer = c.getCredentials().homeServer;
-
-                                    for (MXSession existingSession : sessions) {
-                                        Credentials cred = existingSession.getCredentials();
-                                        isDuplicated |= TextUtils.equals(userId, cred.userId) && TextUtils.equals(homeServer, cred.homeServer);
-                                    }
-
-                                    if (isDuplicated) {
-                                        Toast.makeText(getApplicationContext(), getString(R.string.login_error_already_logged_in), Toast.LENGTH_LONG).show();
-                                    } else {
-                                        MXSession session = Matrix.getInstance(getApplicationContext()).createSession(c);
-                                        Matrix.getInstance(getApplicationContext()).addSession(session);
-                                        startActivity(new Intent(HomeActivity.this, SplashActivity.class));
-                                        HomeActivity.this.finish();
-                                    }
+                                    // loginHandler creates the session so just need to switch to the splash activity
+                                    startActivity(new Intent(HomeActivity.this, SplashActivity.class));
+                                    HomeActivity.this.finish();
                                 }
 
                                 @Override
