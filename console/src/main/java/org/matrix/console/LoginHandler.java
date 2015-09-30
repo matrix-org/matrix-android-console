@@ -17,10 +17,21 @@ import org.matrix.androidsdk.ssl.CertUtil;
 import org.matrix.androidsdk.ssl.Fingerprint;
 import org.matrix.androidsdk.ssl.UnrecognizedCertificateException;
 
+import java.util.Collection;
+
 
 public class LoginHandler {
     private static final String LOG_TAG = "LoginHandler";
 
+    /**
+     * Try to login.
+     * The MXSession is created if the operation succeeds.
+     * @param ctx the context.
+     * @param hsConfig The homeserver config.
+     * @param username The username.
+     * @param password The password;
+     * @param callback The callback.
+     */
     public void login(Context ctx, final HomeserverConnectionConfig hsConfig, final String username, final String password,
                               final SimpleApiCallback<HomeserverConnectionConfig> callback) {
         final Context appCtx = ctx.getApplicationContext();
@@ -29,10 +40,21 @@ public class LoginHandler {
         client.loginWithPassword(username, password, new SimpleApiCallback<Credentials>() {
             @Override
             public void onSuccess(Credentials credentials) {
-                Log.e(LOG_TAG, "client loginWithPassword succeeded.");
-                hsConfig.setCredentials(credentials);
-                MXSession session = Matrix.getInstance(appCtx).createSession(hsConfig);
-                Matrix.getInstance(appCtx).addSession(session);
+                Collection<MXSession> sessions = Matrix.getMXSessions(appCtx);
+                Boolean isDuplicated = false;
+
+                for (MXSession existingSession : sessions) {
+                    Credentials cred = existingSession.getCredentials();
+                    isDuplicated |= TextUtils.equals(credentials.userId, cred.userId) && TextUtils.equals(credentials.homeServer, cred.homeServer);
+                }
+
+                if (!isDuplicated) {
+                    hsConfig.setCredentials(credentials);
+                    MXSession session = Matrix.getInstance(appCtx).createSession(hsConfig);
+                    Matrix.getInstance(appCtx).addSession(session);
+                }
+
+                Log.d(LOG_TAG, "client loginWithPassword succeeded.");
                 callback.onSuccess(hsConfig);
             }
 

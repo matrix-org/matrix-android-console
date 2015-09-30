@@ -191,7 +191,9 @@ public class SplashActivity extends MXCActionBarActivity {
         Collection<MXSession> sessions = mDoneListeners.keySet();
 
         for(MXSession session : sessions) {
-            session.getDataHandler().removeListener(mDoneListeners.get(session));
+            if (session.isActive()) {
+                session.getDataHandler().removeListener(mDoneListeners.get(session));
+            }
         }
     }
 }

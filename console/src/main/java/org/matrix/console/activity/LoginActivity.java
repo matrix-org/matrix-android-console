@@ -196,7 +196,23 @@ public class LoginActivity extends MXCActionBarActivity {
     }
 
     private boolean hasCredentials() {
-        return Matrix.getInstance(this).getDefaultSession() != null;
+        try {
+            return Matrix.getInstance(this).getDefaultSession() != null;
+        } catch (Exception e) {
+        }
+
+        this.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    // getDefaultSession could trigger an exception if the login data are corrupted
+                    CommonActivityUtils.logout(LoginActivity.this);
+                } catch (Exception e) {
+                }
+            }
+        });
+
+        return false;
     }
 
     private void goToSplash() {

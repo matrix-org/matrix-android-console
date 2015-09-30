@@ -68,6 +68,7 @@ import org.matrix.androidsdk.rest.model.login.Credentials;
 import org.matrix.androidsdk.util.EventUtils;
 import org.matrix.androidsdk.util.JsonUtils;
 import org.matrix.console.ConsoleApplication;
+import org.matrix.console.LoginHandler;
 import org.matrix.console.Matrix;
 import org.matrix.console.MyPresenceManager;
 import org.matrix.console.R;
@@ -191,24 +192,30 @@ public class HomeActivity extends MXCActionBarActivity {
         }
 
         final MXSession session = sessions.get(index);
-        final String homeServerUrl = session.getHomeserverConfig().getHomeserverUri().toString();
 
-        // the home server has already been checked ?
-        if (checkedHomeServers.indexOf(homeServerUrl) >= 0) {
-            // jump to the next session
-            refreshPublicRoomsList(sessions, checkedHomeServers, index + 1, publicRoomsListList);
+        // check if the session is still active
+        if (session.isActive()) {
+            final String homeServerUrl = session.getHomeserverConfig().getHomeserverUri().toString();
+
+            // the home server has already been checked ?
+            if (checkedHomeServers.indexOf(homeServerUrl) >= 0) {
+                // jump to the next session
+                refreshPublicRoomsList(sessions, checkedHomeServers, index + 1, publicRoomsListList);
+            } else {
+                // use any session to get the public rooms list
+                session.getEventsApiClient().loadPublicRooms(new SimpleApiCallback<List<PublicRoom>>(this) {
+                    @Override
+                    public void onSuccess(List<PublicRoom> publicRooms) {
+                        checkedHomeServers.add(homeServerUrl);
+                        publicRoomsListList.add(publicRooms);
+
+                        // jump to the next session
+                        refreshPublicRoomsList(sessions, checkedHomeServers, index + 1, publicRoomsListList);
+                    }
+                });
+            }
         } else {
-            // use any session to get the public rooms list
-            session.getEventsApiClient().loadPublicRooms(new SimpleApiCallback<List<PublicRoom>>(this) {
-                @Override
-                public void onSuccess(List<PublicRoom> publicRooms) {
-                    checkedHomeServers.add(homeServerUrl);
-                    publicRoomsListList.add(publicRooms);
-
-                    // jump to the next session
-                    refreshPublicRoomsList(sessions, checkedHomeServers, index + 1, publicRoomsListList);
-                }
-            });
+            refreshPublicRoomsList(sessions, checkedHomeServers, index + 1, publicRoomsListList);
         }
     }
 
@@ -1251,46 +1258,37 @@ public class HomeActivity extends MXCActionBarActivity {
                             return;
                         }
 
-                        client.loginWithPassword(username, password, new SimpleApiCallback<Credentials>(HomeActivity.this) {
-                            @Override
-                            public void onSuccess(Credentials credentials) {
-                                // check if there is active sessions with the same credentials.
-                                Collection<MXSession> sessions = Matrix.getMXSessions(HomeActivity.this);
-
-                                Boolean isDuplicated = false;
-
-                                for (MXSession existingSession : sessions) {
-                                    isDuplicated |= (existingSession.getCredentials().userId.equals(credentials.userId));
-                                }
-
-                                if (isDuplicated) {
-                                    Toast.makeText(getApplicationContext(), getString(R.string.login_error_already_logged_in), Toast.LENGTH_LONG).show();
-                                } else {
-                                    hsConfig.setCredentials(credentials);
-                                    MXSession session = Matrix.getInstance(getApplicationContext()).createSession(hsConfig);
-                                    Matrix.getInstance(getApplicationContext()).addSession(session);
+                        try {
+                            LoginHandler loginHandler = new LoginHandler();
+                            loginHandler.login(HomeActivity.this, hsConfig, username, password, new SimpleApiCallback<HomeserverConnectionConfig>(HomeActivity.this) {
+                                @Override
+                                public void onSuccess(HomeserverConnectionConfig c) {
+                                    // loginHandler creates the session so just need to switch to the splash activity
                                     startActivity(new Intent(HomeActivity.this, SplashActivity.class));
                                     HomeActivity.this.finish();
                                 }
-                            }
 
-                            @Override
-                            public void onNetworkError(Exception e) {
-                                Toast.makeText(getApplicationContext(), getString(R.string.login_error_network_error), Toast.LENGTH_LONG).show();
-                            }
+                                @Override
+                                public void onNetworkError(Exception e) {
+                                    Log.e(LOG_TAG, "Network Error: " + e.getMessage(), e);
+                                    Toast.makeText(getApplicationContext(), getString(R.string.login_error_network_error), Toast.LENGTH_LONG).show();
+                                }
 
-                            @Override
-                            public void onUnexpectedError(Exception e) {
-                                String msg = getString(R.string.login_error_unable_login) + " : " + e.getMessage();
-                                Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_LONG).show();
-                            }
+                                @Override
+                                public void onUnexpectedError(Exception e) {
+                                    String msg = getString(R.string.login_error_unable_login) + " : " + e.getMessage();
+                                    Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_LONG).show();
+                                }
 
-                            @Override
-                            public void onMatrixError(MatrixError e) {
-                                String msg = getString(R.string.login_error_unable_login) + " : " + e.error + "(" + e.errcode + ")";
-                                Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_LONG).show();
-                            }
-                        });
+                                @Override
+                                public void onMatrixError(MatrixError e) {
+                                    String msg = getString(R.string.login_error_unable_login) + " : " + e.error + "(" + e.errcode + ")";
+                                    Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_LONG).show();
+                                }
+                            });
+                        } catch (Exception e) {
+                            Toast.makeText(HomeActivity.this, getString(R.string.login_error_invalid_home_server), Toast.LENGTH_SHORT).show();
+                        }
 
                     }
                 }).setNegativeButton(R.string.cancel,
