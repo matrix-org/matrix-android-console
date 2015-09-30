@@ -1273,15 +1273,13 @@ public class HomeActivity extends MXCActionBarActivity {
 
                                     for (MXSession existingSession : sessions) {
                                         Credentials cred = existingSession.getCredentials();
-
                                         isDuplicated |= TextUtils.equals(userId, cred.userId) && TextUtils.equals(homeServer, cred.homeServer);
                                     }
 
                                     if (isDuplicated) {
                                         Toast.makeText(getApplicationContext(), getString(R.string.login_error_already_logged_in), Toast.LENGTH_LONG).show();
                                     } else {
-                                        hsConfig.setCredentials(c.getCredentials());
-                                        MXSession session = Matrix.getInstance(getApplicationContext()).createSession(hsConfig);
+                                        MXSession session = Matrix.getInstance(getApplicationContext()).createSession(c);
                                         Matrix.getInstance(getApplicationContext()).addSession(session);
                                         startActivity(new Intent(HomeActivity.this, SplashActivity.class));
                                         HomeActivity.this.finish();
