@@ -95,7 +95,7 @@ public class RoomInfoUpdateDialogFragment extends DialogFragment {
             mRoom.updateTopic(topicFromForm, changeCallback);
         }
 
-        if (UIUtils.hasFieldChanged(roomState.roomAliasName, canonicalFromForm)) {
+        if (UIUtils.hasFieldChanged(roomState.alias, canonicalFromForm)) {
             mRoom.updateCanonicalAlias(canonicalFromForm, changeCallback);
         }
     }
@@ -107,7 +107,7 @@ public class RoomInfoUpdateDialogFragment extends DialogFragment {
         String topicFromForm = mEditTextTopic.getText().toString();
         String canonicalFromForm = mEditTextCanonical.getText().toString();
 
-        return UIUtils.hasFieldChanged(roomState.roomAliasName, canonicalFromForm) || UIUtils.hasFieldChanged(roomState.name, nameFromForm) || UIUtils.hasFieldChanged(roomState.topic, topicFromForm);
+        return UIUtils.hasFieldChanged(roomState.alias, canonicalFromForm) || UIUtils.hasFieldChanged(roomState.name, nameFromForm) || UIUtils.hasFieldChanged(roomState.topic, topicFromForm);
     }
 
     private void manageOkButton(final Button okButton) {
@@ -128,7 +128,7 @@ public class RoomInfoUpdateDialogFragment extends DialogFragment {
 
         mEditTextName.setText(mRoom.getLiveState().name);
         mEditTextTopic.setText(mRoom.getLiveState().topic);
-        mEditTextCanonical.setText(mRoom.getLiveState().roomAliasName);
+        mEditTextCanonical.setText(mRoom.getLiveState().alias);
 
         final Button okButton = (Button) view.findViewById(R.id.room_info_ok);
         final Button cancelButton = (Button) view.findViewById(R.id.room_info_cancel);
