@@ -639,6 +639,18 @@ public class HomeActivity extends MXCActionBarActivity {
                 });
             }
 
+
+            @Override
+            public void onReceiptEvent(String roomId) {
+                HomeActivity.this.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        refreshOnChunkEnd = true;
+                    }
+                });
+
+            }
+
             @Override
             public void onLiveEventsChunkProcessed() {
                 runOnUiThread(new Runnable() {
