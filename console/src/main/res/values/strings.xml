@@ -70,6 +70,7 @@
     <string name="send_files_in">Send into</string>
     <string name="save_files_in">Save into</string>
     <string name="file_is_saved">%1$s is saved.</string>
+    <string name="read_receipt">Read</string>
 
     <string name="downloads">Downloads</string>
     <string name="gallery">Gallery</string>

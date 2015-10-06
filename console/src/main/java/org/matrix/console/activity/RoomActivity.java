@@ -375,6 +375,7 @@ public class RoomActivity extends MXCActionBarActivity {
             mHeight = height;
         }
     }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         if (CommonActivityUtils.shouldRestartApp()) {

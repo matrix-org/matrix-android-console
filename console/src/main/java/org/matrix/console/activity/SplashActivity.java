@@ -15,6 +15,7 @@
  */
 package org.matrix.console.activity;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
@@ -46,15 +47,31 @@ public class SplashActivity extends MXCActionBarActivity {
     private HashMap<MXSession, IMXEventListener> mListeners;
     private HashMap<MXSession, IMXEventListener> mDoneListeners;
 
+    private boolean hasCorruptedStore() {
+        boolean hasCorruptedStore = false;
+        ArrayList<MXSession> sessions = Matrix.getMXSessions(this);
+
+        for(MXSession session : sessions) {
+            if (session.isActive()) {
+                hasCorruptedStore |= session.getDataHandler().getStore().isCorrupted();
+            }
+        }
+        return hasCorruptedStore;
+    }
+
     private void finishIfReady() {
         Log.e(LOG_TAG, "finishIfReady " + mInitialSyncComplete + " " + mPusherRegistrationComplete);
 
         if (mInitialSyncComplete && mPusherRegistrationComplete) {
             Log.e(LOG_TAG, "finishIfRead start HomeActivity");
 
-            // Go to the home page
-            startActivity(new Intent(SplashActivity.this, HomeActivity.class));
-            SplashActivity.this.finish();
+            if (!hasCorruptedStore()) {
+                // Go to the home page
+                startActivity(new Intent(SplashActivity.this, HomeActivity.class));
+                SplashActivity.this.finish();
+            } else {
+                CommonActivityUtils.logout(this);
+            }
         }
     }
 
