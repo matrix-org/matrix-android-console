@@ -21,6 +21,7 @@ import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.Html;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -65,6 +66,7 @@ public class LockScreenActivity extends Activity { // do NOT extend from UC*Acti
         // this will turn the screen on whilst honouring the screen timeout setting, so it will
         // dim/turn off depending on user configured values.
         window.addFlags(WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
+        this.requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.activity_lock_screen);
 
         // remove any pending notifications
@@ -92,12 +94,10 @@ public class LockScreenActivity extends Activity { // do NOT extend from UC*Acti
 
         final MXSession session = Matrix.getInstance(getApplicationContext()).getSession(matrixId);
         final Room room = session.getDataHandler().getRoom(roomId);
-
-        // display the room name as title
-        setTitle(room.getName(session.getCredentials().userId));
-
-        ((TextView)findViewById(R.id.lock_screen_sender)).setText( intent.getStringExtra(EXTRA_SENDER_NAME) + " : ");
+        
+        ((TextView)findViewById(R.id.lock_screen_sender)).setText(intent.getStringExtra(EXTRA_SENDER_NAME) + " : ");
         ((TextView)findViewById(R.id.lock_screen_body)).setText( intent.getStringExtra(EXTRA_MESSAGE_BODY));
+        ((TextView)findViewById(R.id.lock_screen_room_name)).setText(room.getName(session.getCredentials().userId));
 
         findViewById(R.id.lock_screen_sendbutton).setOnClickListener(new View.OnClickListener() {
 
