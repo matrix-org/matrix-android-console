@@ -65,14 +65,16 @@ import org.matrix.console.db.ConsoleContentProvider;
 import org.matrix.console.util.SlidableImageInfo;
 
 import java.io.File;
-import java.lang.reflect.Array;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
+
 public class ConsoleMessageListFragment extends MatrixMessageListFragment {
+
+    private static final String TAG_FRAGMENT_RECEIPTS_DIALOG = "ConsoleMessageListFragment.TAG_FRAGMENT_RECEIPTS_DIALOG";
 
     public static ConsoleMessageListFragment newInstance(String matrixId, String roomId, int layoutResId) {
         ConsoleMessageListFragment f = new ConsoleMessageListFragment();
@@ -636,5 +638,13 @@ public class ConsoleMessageListFragment extends MatrixMessageListFragment {
     }
 
     public void onMoreReadReceiptClick(String eventId) {
+        FragmentManager fm = getActivity().getSupportFragmentManager();
+
+        ReadReceiptsDialogFragment fragment = (ReadReceiptsDialogFragment) fm.findFragmentByTag(TAG_FRAGMENT_RECEIPTS_DIALOG);
+        if (fragment != null) {
+            fragment.dismissAllowingStateLoss();
+        }
+        fragment = ReadReceiptsDialogFragment.newInstance(mSession, mRoom.getRoomId(), eventId);
+        fragment.show(fm, TAG_FRAGMENT_RECEIPTS_DIALOG);
     }
 }
