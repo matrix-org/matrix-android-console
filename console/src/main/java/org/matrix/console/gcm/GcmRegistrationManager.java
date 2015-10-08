@@ -252,6 +252,16 @@ public final class GcmRegistrationManager {
         return preferences.getBoolean(mContext.getString(R.string.settings_key_use_google_cloud_messaging), true);
     }
 
+    /**
+     * Update the GCM status
+     * @param use
+     */
+    public void setUseGCM(Boolean use) {
+        SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(mContext).edit();
+        editor.putBoolean(mContext.getString(R.string.settings_key_use_google_cloud_messaging), use);
+        editor.commit();
+    }
+
     public Boolean isGCMRegistred() {
         return (mRegistrationState == RegistrationState.GCM_REGISTRED) || (mRegistrationState == RegistrationState.SERVER_REGISTRATING) || (mRegistrationState == RegistrationState.SERVER_REGISTERED);
     }
@@ -269,14 +279,19 @@ public final class GcmRegistrationManager {
 
         if (pushKey == null) {
             try {
+                Log.i(LOG_TAG, "Getting the GCM Registration Token");
+
                 InstanceID instanceID = InstanceID.getInstance(appContext);
                 pushKey = instanceID.getToken(appContext.getString(R.string.gcm_defaultSenderId),
                         GoogleCloudMessaging.INSTANCE_ID_SCOPE, null);
-                // [END get_token]
+
+
                 Log.i(LOG_TAG, "GCM Registration Token: " + pushKey);
 
                 //setStoredRegistrationId(registrationId);
             } catch (IOException e) {
+                pushKey = null;
+            } catch (Exception e) {
                 pushKey = null;
             }
         }

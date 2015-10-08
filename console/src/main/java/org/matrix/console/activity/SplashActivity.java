@@ -17,6 +17,7 @@ package org.matrix.console.activity;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 
@@ -177,6 +178,16 @@ public class SplashActivity extends MXCActionBarActivity {
 
                 @Override
                 public void onPusherRegistrationFailed() {
+                    // fallback to the events service
+                    Matrix.getInstance(SplashActivity.this).getSharedGcmRegistrationManager().setUseGCM(false);
+
+                    SplashActivity.this.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            CommonActivityUtils.onGcmUpdate(SplashActivity.this);
+                        }
+                    });
+
                     // can register it ignore
                     onPusherRegistered();
                 }
