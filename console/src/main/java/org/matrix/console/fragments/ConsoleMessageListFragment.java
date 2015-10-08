@@ -524,7 +524,7 @@ public class ConsoleMessageListFragment extends MatrixMessageListFragment {
 
     public void onSenderNameClick(String userId, String displayName) {
         if (getActivity() instanceof RoomActivity) {
-            ((RoomActivity)getActivity()).insertInTextEditor(displayName);
+            ((RoomActivity)getActivity()).insertInTextEditor(mRoom.getLiveState().getMemberName(userId));
         }
     }
 
