@@ -79,6 +79,7 @@ public class CallViewActivity extends FragmentActivity {
 
     // sounds management
     private static MediaPlayer mRingingPLayer = null;
+    private static MediaPlayer mRingbackPlayer = null;
     private static MediaPlayer mCallEndPlayer = null;
     private static final int DEFAULT_PERCENT_VOLUME = 10;
     private static final int FIRST_PERCENT_VOLUME = 10;
@@ -597,7 +598,11 @@ public class CallViewActivity extends FragmentActivity {
                 mAcceptButton.setAlpha(1.0f);
                 mAcceptButton.setEnabled(true);
 
-                startRinging(CallViewActivity.this);
+                if (mCall.isIncoming()) {
+                    startRinging(CallViewActivity.this);
+                } else {
+                    startRingbackSound(CallViewActivity.this);
+                }
             }
         }
     }
@@ -722,12 +727,37 @@ public class CallViewActivity extends FragmentActivity {
     }
 
     /**
+     * Start the ringback sound
+     */
+    public static void startRingbackSound(Context context) {
+        if (null == mRingbackPlayer) {
+            mRingbackPlayer = MediaPlayer.create(context.getApplicationContext(), R.raw.ringback);
+            mRingbackPlayer.setLooping(true);
+            mRingbackPlayer.setVolume(1.0f, 1.0f);
+        }
+
+        if (null != mRingbackPlayer) {
+            // check if it is not yet playing
+            if (!mRingbackPlayer.isPlaying()) {
+                // stop pending
+                if ((null != mCallEndPlayer) && mCallEndPlayer.isPlaying()) {
+                    mCallEndPlayer.stop();
+                }
+                MXCallsManager.setSpeakerphoneOn(context, true);
+                mRingbackPlayer.start();
+            }
+        }
+    }
+    /**
      * Stop the ringing sound
      */
     public static void stopRinging() {
         // sanity checks
         if ((null != mRingingPLayer) && mRingingPLayer.isPlaying()) {
             mRingingPLayer.pause();
+        }
+        if ((null != mRingbackPlayer) && mRingbackPlayer.isPlaying()) {
+            mRingbackPlayer.pause();
         }
     }
 
