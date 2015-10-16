@@ -709,8 +709,11 @@ public class CallViewActivity extends FragmentActivity {
     public static void startRinging(Context context) {
         if (null == mRingingPLayer) {
             mRingingPLayer = MediaPlayer.create(context.getApplicationContext(), R.raw.ring);
-            mRingingPLayer.setLooping(true);
-            mRingingPLayer.setVolume(1.0f, 1.0f);
+
+            if (null != mRingingPLayer) {
+                mRingingPLayer.setLooping(true);
+                mRingingPLayer.setVolume(1.0f, 1.0f);
+            }
         }
 
         if (null != mRingingPLayer) {
@@ -720,6 +723,11 @@ public class CallViewActivity extends FragmentActivity {
                 if ((null != mCallEndPlayer) && mCallEndPlayer.isPlaying()) {
                     mCallEndPlayer.stop();
                 }
+
+                if ((null != mRingbackPlayer) && mRingbackPlayer.isPlaying()) {
+                    mRingbackPlayer.stop();
+                }
+
                 MXCallsManager.setSpeakerphoneOn(context, true);
                 mRingingPLayer.start();
             }
@@ -732,8 +740,11 @@ public class CallViewActivity extends FragmentActivity {
     public static void startRingbackSound(Context context) {
         if (null == mRingbackPlayer) {
             mRingbackPlayer = MediaPlayer.create(context.getApplicationContext(), R.raw.ringback);
-            mRingbackPlayer.setLooping(true);
-            mRingbackPlayer.setVolume(1.0f, 1.0f);
+
+            if (null != mRingbackPlayer) {
+                mRingbackPlayer.setLooping(true);
+                mRingbackPlayer.setVolume(1.0f, 1.0f);
+            }
         }
 
         if (null != mRingbackPlayer) {
@@ -743,6 +754,11 @@ public class CallViewActivity extends FragmentActivity {
                 if ((null != mCallEndPlayer) && mCallEndPlayer.isPlaying()) {
                     mCallEndPlayer.stop();
                 }
+
+                if ((null != mRingingPLayer) && mRingingPLayer.isPlaying()) {
+                    mRingingPLayer.stop();
+                }
+
                 MXCallsManager.setSpeakerphoneOn(context, true);
                 mRingbackPlayer.start();
             }
