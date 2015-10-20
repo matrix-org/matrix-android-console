@@ -79,6 +79,7 @@ public class CallViewActivity extends FragmentActivity {
 
     // sounds management
     private static MediaPlayer mRingingPLayer = null;
+    private static MediaPlayer mRingbackPlayer = null;
     private static MediaPlayer mCallEndPlayer = null;
     private static final int DEFAULT_PERCENT_VOLUME = 10;
     private static final int FIRST_PERCENT_VOLUME = 10;
@@ -597,7 +598,11 @@ public class CallViewActivity extends FragmentActivity {
                 mAcceptButton.setAlpha(1.0f);
                 mAcceptButton.setEnabled(true);
 
-                startRinging(CallViewActivity.this);
+                if (mCall.isIncoming()) {
+                    startRinging(CallViewActivity.this);
+                } else {
+                    startRingbackSound(CallViewActivity.this);
+                }
             }
         }
     }
@@ -704,8 +709,11 @@ public class CallViewActivity extends FragmentActivity {
     public static void startRinging(Context context) {
         if (null == mRingingPLayer) {
             mRingingPLayer = MediaPlayer.create(context.getApplicationContext(), R.raw.ring);
-            mRingingPLayer.setLooping(true);
-            mRingingPLayer.setVolume(1.0f, 1.0f);
+
+            if (null != mRingingPLayer) {
+                mRingingPLayer.setLooping(true);
+                mRingingPLayer.setVolume(1.0f, 1.0f);
+            }
         }
 
         if (null != mRingingPLayer) {
@@ -715,6 +723,11 @@ public class CallViewActivity extends FragmentActivity {
                 if ((null != mCallEndPlayer) && mCallEndPlayer.isPlaying()) {
                     mCallEndPlayer.stop();
                 }
+
+                if ((null != mRingbackPlayer) && mRingbackPlayer.isPlaying()) {
+                    mRingbackPlayer.stop();
+                }
+
                 MXCallsManager.setSpeakerphoneOn(context, true);
                 mRingingPLayer.start();
             }
@@ -722,12 +735,45 @@ public class CallViewActivity extends FragmentActivity {
     }
 
     /**
+     * Start the ringback sound
+     */
+    public static void startRingbackSound(Context context) {
+        if (null == mRingbackPlayer) {
+            mRingbackPlayer = MediaPlayer.create(context.getApplicationContext(), R.raw.ringback);
+
+            if (null != mRingbackPlayer) {
+                mRingbackPlayer.setLooping(true);
+                mRingbackPlayer.setVolume(1.0f, 1.0f);
+            }
+        }
+
+        if (null != mRingbackPlayer) {
+            // check if it is not yet playing
+            if (!mRingbackPlayer.isPlaying()) {
+                // stop pending
+                if ((null != mCallEndPlayer) && mCallEndPlayer.isPlaying()) {
+                    mCallEndPlayer.stop();
+                }
+
+                if ((null != mRingingPLayer) && mRingingPLayer.isPlaying()) {
+                    mRingingPLayer.stop();
+                }
+
+                MXCallsManager.setSpeakerphoneOn(context, true);
+                mRingbackPlayer.start();
+            }
+        }
+    }
+    /**
      * Stop the ringing sound
      */
     public static void stopRinging() {
         // sanity checks
         if ((null != mRingingPLayer) && mRingingPLayer.isPlaying()) {
             mRingingPLayer.pause();
+        }
+        if ((null != mRingbackPlayer) && mRingbackPlayer.isPlaying()) {
+            mRingbackPlayer.pause();
         }
     }
 
