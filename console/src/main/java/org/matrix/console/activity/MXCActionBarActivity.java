@@ -40,6 +40,7 @@ import android.widget.ListView;
 import org.matrix.androidsdk.MXSession;
 import org.matrix.console.ConsoleApplication;
 import org.matrix.console.Matrix;
+import org.matrix.console.MyPresenceManager;
 import org.matrix.console.R;
 import org.matrix.console.adapters.DrawerAdapter;
 import org.matrix.console.services.EventStreamService;
@@ -193,6 +194,12 @@ public class MXCActionBarActivity extends ActionBarActivity {
 
         ConsoleApplication.setCurrentActivity(this);
         Matrix.setSessionErrorListener(this);
+
+        // the online presence must be displayed ASAP.
+        if ((null != Matrix.getInstance(this)) && (null != Matrix.getInstance(this).getSessions())) {
+            MyPresenceManager.createPresenceManager(this, Matrix.getInstance(this).getSessions());
+            MyPresenceManager.advertiseAllOnline();
+        }
     }
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {

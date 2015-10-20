@@ -924,8 +924,7 @@ public class HomeActivity extends MXCActionBarActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        MyPresenceManager.createPresenceManager(this, Matrix.getInstance(this).getSessions());
-        MyPresenceManager.advertiseAllOnline();
+
         mIsPaused = false;
 
         // some unsent messages could have been added
