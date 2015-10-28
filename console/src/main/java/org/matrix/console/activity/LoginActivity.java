@@ -117,7 +117,6 @@ public class LoginActivity extends MXCActionBarActivity {
             }
         });
 
-
         // detect if the user taps on the next / done button
         mHomeServerText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
