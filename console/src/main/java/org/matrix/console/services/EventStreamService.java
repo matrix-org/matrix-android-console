@@ -136,6 +136,16 @@ public class EventStreamService extends Service {
          * @param event the hangup event.
          */
         private void manageHangUpEvent(Event event) {
+            // check if the user answer from another device
+            if (Event.EVENT_TYPE_CALL_ANSWER.equals(event.type)) {
+                MXSession session = Matrix.getMXSession(getApplicationContext(), event.getMatrixId());
+
+                // ignore the answer event if it was sent by another member
+                if (!TextUtils.equals(event.userId, session.getCredentials().userId)) {
+                    return;
+                }
+            }
+
             String callId = null;
 
             try {
@@ -147,6 +157,7 @@ public class EventStreamService extends Service {
                 hidePendingCallNotification(callId);
             }
 
+            Log.d(LOG_TAG, "manageHangUpEvent stopRinging");
             CallViewActivity.stopRinging();
         }
 
@@ -163,7 +174,7 @@ public class EventStreamService extends Service {
 
         @Override
         public void onLiveEvent(Event event, RoomState roomState) {
-            if (Event.EVENT_TYPE_CALL_HANGUP.equals(event.type)) {
+            if (Event.EVENT_TYPE_CALL_HANGUP.equals(event.type) || Event.EVENT_TYPE_CALL_ANSWER.equals(event.type)) {
                 manageHangUpEvent(event);
             }
         }
@@ -301,6 +312,7 @@ public class EventStreamService extends Service {
 
             if (bingRule.isCallRingNotificationSound(bingRule.notificationSound())) {
                 if (null == CallViewActivity.getActiveCall()) {
+                    Log.d(LOG_TAG, "onBingEvent starting");
                     CallViewActivity.startRinging(EventStreamService.this);
                 }
             }
