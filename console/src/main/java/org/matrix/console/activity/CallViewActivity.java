@@ -718,7 +718,7 @@ public class CallViewActivity extends FragmentActivity {
     /**
      * @return true if the ringing sound is played
      */
-    private static Boolean isRinging() {
+    public static Boolean isRinging() {
         if (null != mRingingPLayer) {
             return mRingingPLayer.isPlaying();
         }

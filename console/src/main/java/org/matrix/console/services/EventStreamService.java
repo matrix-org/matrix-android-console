@@ -352,6 +352,24 @@ public class EventStreamService extends Service {
                 mLatestNotification = null;
             }
 
+            // special catchup cases
+            if (mState == StreamAction.CATCHUP) {
+
+                Boolean hasActiveCalls = false;
+
+                for(MXSession session : mSessions) {
+                    hasActiveCalls |= session.mCallsManager.hasActiveCalls();
+                }
+
+                // if there are some active calls, the catchup should not be stopped.
+                // because an user could answer to a call from another device.
+                // there will no push because it is his own message.
+                // so, the client has no choice to catchup until the ring is shutdown
+                if (hasActiveCalls) {
+                    Log.d(LOG_TAG, "Catchup again because there are active calls");
+                    catchup();
+                }
+            }
         }
 
 
