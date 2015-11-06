@@ -285,7 +285,7 @@ public class NotificationsRulesAdapter extends ArrayAdapter<BingRule> {
                 }
             });
         } else {
-            if ((convertView == null) || (null == convertView.findViewById(R.id.play_pause_imageview))) {
+            if ((convertView == null) || (null == convertView.findViewById(R.id.play_pause_checkbox))) {
                 convertView = mLayoutInflater.inflate(mExistingRuleLayoutResourceId, parent, false);
             }
             // pattern text
@@ -295,10 +295,10 @@ public class NotificationsRulesAdapter extends ArrayAdapter<BingRule> {
             final BingRule bingRule = getItem(position);
 
             // play/pause button
-            ImageView playPauseImageView = (ImageView) convertView.findViewById(R.id.play_pause_imageview);
+            CheckBox playPauseCheckBox = (CheckBox) convertView.findViewById(R.id.play_pause_checkbox);
             ImageView deleteImageView = (ImageView) convertView.findViewById(R.id.delete_imageview);
 
-            playPauseImageView.setImageBitmap(BitmapFactory.decodeResource(mContext.getResources(), bingRule.isEnabled ? R.drawable.notification_pause : R.drawable.notification_play));
+            playPauseCheckBox.setChecked(bingRule.isEnabled);
 
             if (mNotificationType == PER_WORD_NOTIFICATION) {
                 notificationPattern.setText(((ContentRule) bingRule).pattern);
@@ -315,7 +315,7 @@ public class NotificationsRulesAdapter extends ArrayAdapter<BingRule> {
                 notificationPattern.setText(bingRule.ruleId);
             }
 
-            playPauseImageView.setOnClickListener(new View.OnClickListener() {
+            playPauseCheckBox.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     if (null != mListener) {

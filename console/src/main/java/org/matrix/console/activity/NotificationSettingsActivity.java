@@ -23,6 +23,7 @@ import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListAdapter;
@@ -59,15 +60,15 @@ public class NotificationSettingsActivity extends MXCActionBarActivity {
     private ListView mPerRoomList = null;
     private ListView mPerSenderList = null;
 
-    private ImageView mContainUserNameImageView = null;
-    private ImageView mContainMyDisplayNameImageView = null;
-    private ImageView mJustSendToMeImageView = null;
-    private ImageView mInviteToNewRoomImageView = null;
-    private ImageView mPeopleJoinLeaveImageView = null;
-    private ImageView mReceiveACallImageView = null;
-    private ImageView mSuppressFromBotsImageView = null;
+    private CheckBox mContainUserNameCheckBox = null;
+    private CheckBox mContainMyDisplayNameCheckBox = null;
+    private CheckBox mJustSendToMeCheckBox = null;
+    private CheckBox mInviteToNewRoomCheckBox = null;
+    private CheckBox mPeopleJoinLeaveCheckBox = null;
+    private CheckBox mReceiveACallCheckBox = null;
+    private CheckBox mSuppressFromBotsCheckBox = null;
 
-    private ImageView mNotifyAllOthersImageView = null;
+    private CheckBox mNotifyAllOthersCheckBox = null;
 
     private LinearLayout mEnableLayout = null;
     private LinearLayout mAllSettingsLayout = null;
@@ -76,8 +77,8 @@ public class NotificationSettingsActivity extends MXCActionBarActivity {
     private BingRulesManager mBingRulesManager = null;
     private BingRuleSet mBingRuleSet = null;
 
-    private HashMap<String, ImageView> mRuleImageViewByRuleId = new HashMap<String, ImageView>();
-    private HashMap<ImageView, String> mRuleIdByImageView = new HashMap<ImageView, String>();
+    private HashMap<String, CheckBox> mRuleCheckBoxByRuleId = new HashMap<String, CheckBox>();
+    private HashMap<CheckBox, String> mRuleIdByCheckBox = new HashMap<CheckBox, String>();
 
     MXEventListener mEventsListener = new MXEventListener() {
         @Override
@@ -126,10 +127,10 @@ public class NotificationSettingsActivity extends MXCActionBarActivity {
         }
     };
 
-    View.OnClickListener mOnImageClickListener = new View.OnClickListener() {
+    View.OnClickListener mOnCheckBoxClickListener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
-            String ruleId = mRuleIdByImageView.get(v);
+            String ruleId = mRuleIdByCheckBox.get(v);
 
             if (null != ruleId) {
                 allowUserUpdate(false);
@@ -187,34 +188,34 @@ public class NotificationSettingsActivity extends MXCActionBarActivity {
         mPerRoomList.setAdapter(mPerRoomAdapter);
         mPerSenderList.setAdapter(mPerSenderAdapter);
 
-        mContainUserNameImageView = (ImageView)findViewById(R.id.contain_my_user_name_imageview);
-        mContainMyDisplayNameImageView = (ImageView)findViewById(R.id.contain_my_display_name_imageview);
-        mJustSendToMeImageView = (ImageView)findViewById(R.id.just_sent_to_me_imageview);
-        mInviteToNewRoomImageView = (ImageView)findViewById(R.id.invite_to_new_room_imageview);
-        mPeopleJoinLeaveImageView = (ImageView)findViewById(R.id.people_leave_join_room_imageview);
-        mReceiveACallImageView = (ImageView)findViewById(R.id.receive_a_call_imageview);
-        mSuppressFromBotsImageView = (ImageView)findViewById(R.id.suppress_from_bots_imageview);
+        mContainUserNameCheckBox = (CheckBox)findViewById(R.id.contain_my_user_name_check);
+        mContainMyDisplayNameCheckBox = (CheckBox)findViewById(R.id.contain_my_display_name_check);
+        mJustSendToMeCheckBox = (CheckBox)findViewById(R.id.just_sent_to_me_check);
+        mInviteToNewRoomCheckBox = (CheckBox)findViewById(R.id.invite_to_new_room_check);
+        mPeopleJoinLeaveCheckBox = (CheckBox)findViewById(R.id.people_leave_join_room_check);
+        mReceiveACallCheckBox = (CheckBox)findViewById(R.id.receive_a_call_check);
+        mSuppressFromBotsCheckBox = (CheckBox)findViewById(R.id.suppress_from_bots_check);
 
-        mNotifyAllOthersImageView = (ImageView)findViewById(R.id.notify_all_others_imageview);
+        mNotifyAllOthersCheckBox = (CheckBox)findViewById(R.id.notify_all_others_check);
 
         mAllSettingsLayout = (LinearLayout)findViewById(R.id.settings_items_layout);
         mEnableLayout = (LinearLayout)findViewById(R.id.notif_settings_disable_all_layout);
 
         // define imageView <-> rule ID map
-        mRuleImageViewByRuleId.put(BingRule.RULE_ID_CONTAIN_USER_NAME, mContainUserNameImageView);
-        mRuleImageViewByRuleId.put(BingRule.RULE_ID_CONTAIN_DISPLAY_NAME, mContainMyDisplayNameImageView);
-        mRuleImageViewByRuleId.put(BingRule.RULE_ID_ONE_TO_ONE_ROOM, mJustSendToMeImageView);
-        mRuleImageViewByRuleId.put(BingRule.RULE_ID_INVITE_ME, mInviteToNewRoomImageView);
-        mRuleImageViewByRuleId.put(BingRule.RULE_ID_PEOPLE_JOIN_LEAVE, mPeopleJoinLeaveImageView);
-        mRuleImageViewByRuleId.put(BingRule.RULE_ID_CALL, mReceiveACallImageView);
-        mRuleImageViewByRuleId.put(BingRule.RULE_ID_SUPPRESS_BOTS_NOTIFICATIONS, mSuppressFromBotsImageView);
-        mRuleImageViewByRuleId.put(BingRule.RULE_ID_ALL_OTHER_MESSAGES_ROOMS, mNotifyAllOthersImageView);
+        mRuleCheckBoxByRuleId.put(BingRule.RULE_ID_CONTAIN_USER_NAME, mContainUserNameCheckBox);
+        mRuleCheckBoxByRuleId.put(BingRule.RULE_ID_CONTAIN_DISPLAY_NAME, mContainMyDisplayNameCheckBox);
+        mRuleCheckBoxByRuleId.put(BingRule.RULE_ID_ONE_TO_ONE_ROOM, mJustSendToMeCheckBox);
+        mRuleCheckBoxByRuleId.put(BingRule.RULE_ID_INVITE_ME, mInviteToNewRoomCheckBox);
+        mRuleCheckBoxByRuleId.put(BingRule.RULE_ID_PEOPLE_JOIN_LEAVE, mPeopleJoinLeaveCheckBox);
+        mRuleCheckBoxByRuleId.put(BingRule.RULE_ID_CALL, mReceiveACallCheckBox);
+        mRuleCheckBoxByRuleId.put(BingRule.RULE_ID_SUPPRESS_BOTS_NOTIFICATIONS, mSuppressFromBotsCheckBox);
+        mRuleCheckBoxByRuleId.put(BingRule.RULE_ID_ALL_OTHER_MESSAGES_ROOMS, mNotifyAllOthersCheckBox);
 
-        for(String key : mRuleImageViewByRuleId.keySet()) {
-            ImageView imageView = mRuleImageViewByRuleId.get(key);
+        for(String key : mRuleCheckBoxByRuleId.keySet()) {
+            CheckBox checkBox = mRuleCheckBoxByRuleId.get(key);
 
-            imageView.setOnClickListener(mOnImageClickListener);
-            mRuleIdByImageView.put(imageView, key);
+            checkBox.setOnClickListener(mOnCheckBoxClickListener);
+            mRuleIdByCheckBox.put(checkBox, key);
         }
 
         fullRefresh();
@@ -226,10 +227,6 @@ public class NotificationSettingsActivity extends MXCActionBarActivity {
 
         mEnableLayout.setAlpha(status ? 1.0f : 0.5f);
         mAllSettingsLayout.setAlpha(status ? 1.0f : 0.5f);
-    }
-
-    private void updateImageView(ImageView imageView, boolean enabled) {
-        imageView.setImageBitmap(BitmapFactory.decodeResource(this.getResources(), enabled ? R.drawable.notification_pause : R.drawable.notification_play));
     }
 
     /**
@@ -303,9 +300,14 @@ public class NotificationSettingsActivity extends MXCActionBarActivity {
             mPerSenderAdapter.addAll(new BingRule(false));
             mPerSenderAdapter.setListener(mOnRulesClicklistener);
 
-            for(String ruleId : mRuleImageViewByRuleId.keySet()) {
+            for(String ruleId : mRuleCheckBoxByRuleId.keySet()) {
                 BingRule rule = mBingRuleSet.findDefaultRule(ruleId);
-                updateImageView(mRuleImageViewByRuleId.get(ruleId), (null == rule) || (rule.isEnabled));
+                CheckBox checkBox = mRuleCheckBoxByRuleId.get(ruleId);
+
+                // sanity check
+                if ((null != rule) && (null != checkBox)) {
+                    checkBox.setChecked((null == rule) || (rule.isEnabled));
+                }
             }
         }
 

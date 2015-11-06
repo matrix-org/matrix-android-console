@@ -144,13 +144,12 @@
                 android:layout_marginBottom="5dp"
                 android:paddingRight="10dp">
 
-                <ImageView
-                    android:id="@+id/contain_my_user_name_imageview"
+                <CheckBox
+                    android:id="@+id/contain_my_user_name_check"
+                    android:layout_gravity="center_vertical"
                     android:layout_width="30dp"
                     android:layout_height="30dp"
-                    android:layout_gravity="center_vertical"
-                    android:src="@drawable/notification_pause"
-                    android:scaleType="centerCrop" />
+                    android:checked="true" />
 
                 <TextView
                     android:layout_marginLeft="10dp"
@@ -168,13 +167,12 @@
                 android:layout_marginBottom="5dp"
                 android:paddingRight="10dp">
 
-                <ImageView
-                    android:id="@+id/contain_my_display_name_imageview"
+                <CheckBox
+                    android:id="@+id/contain_my_display_name_check"
+                    android:layout_gravity="center_vertical"
                     android:layout_width="30dp"
                     android:layout_height="30dp"
-                    android:layout_gravity="center_vertical"
-                    android:src="@drawable/notification_pause"
-                    android:scaleType="centerCrop" />
+                    android:checked="true" />
 
                 <TextView
                     android:layout_marginLeft="10dp"
@@ -192,13 +190,12 @@
                 android:layout_marginBottom="5dp"
                 android:paddingRight="10dp">
 
-                <ImageView
-                    android:id="@+id/just_sent_to_me_imageview"
+                <CheckBox
+                    android:id="@+id/just_sent_to_me_check"
+                    android:layout_gravity="center_vertical"
                     android:layout_width="30dp"
                     android:layout_height="30dp"
-                    android:layout_gravity="center_vertical"
-                    android:src="@drawable/notification_pause"
-                    android:scaleType="centerCrop" />
+                    android:checked="true" />
 
                 <TextView
                     android:layout_marginLeft="10dp"
@@ -216,13 +213,12 @@
                 android:layout_marginBottom="5dp"
                 android:paddingRight="10dp">
 
-                <ImageView
-                    android:id="@+id/invite_to_new_room_imageview"
+                <CheckBox
+                    android:id="@+id/invite_to_new_room_check"
+                    android:layout_gravity="center_vertical"
                     android:layout_width="30dp"
                     android:layout_height="30dp"
-                    android:layout_gravity="center_vertical"
-                    android:src="@drawable/notification_pause"
-                    android:scaleType="centerCrop" />
+                    android:checked="true" />
 
                 <TextView
                     android:layout_marginLeft="10dp"
@@ -240,13 +236,12 @@
                 android:layout_marginBottom="5dp"
                 android:paddingRight="10dp">
 
-                <ImageView
-                    android:id="@+id/people_leave_join_room_imageview"
+                <CheckBox
+                    android:id="@+id/people_leave_join_room_check"
+                    android:layout_gravity="center_vertical"
                     android:layout_width="30dp"
                     android:layout_height="30dp"
-                    android:layout_gravity="center_vertical"
-                    android:src="@drawable/notification_pause"
-                    android:scaleType="centerCrop" />
+                    android:checked="true" />
 
                 <TextView
                     android:layout_marginLeft="10dp"
@@ -264,13 +259,12 @@
                 android:layout_marginBottom="5dp"
                 android:paddingRight="10dp">
 
-                <ImageView
-                    android:id="@+id/receive_a_call_imageview"
+                <CheckBox
+                    android:id="@+id/receive_a_call_check"
+                    android:layout_gravity="center_vertical"
                     android:layout_width="30dp"
                     android:layout_height="30dp"
-                    android:layout_gravity="center_vertical"
-                    android:src="@drawable/notification_pause"
-                    android:scaleType="centerCrop" />
+                    android:checked="true" />
 
                 <TextView
                     android:layout_marginLeft="10dp"
@@ -288,13 +282,12 @@
                 android:layout_marginBottom="5dp"
                 android:paddingRight="10dp">
 
-                <ImageView
-                    android:id="@+id/suppress_from_bots_imageview"
+                <CheckBox
+                    android:id="@+id/suppress_from_bots_check"
+                    android:layout_gravity="center_vertical"
                     android:layout_width="30dp"
                     android:layout_height="30dp"
-                    android:layout_gravity="center_vertical"
-                    android:src="@drawable/notification_pause"
-                    android:scaleType="centerCrop" />
+                    android:checked="true" />
 
                 <TextView
                     android:layout_marginLeft="10dp"
@@ -322,13 +315,12 @@
                 android:layout_marginBottom="5dp"
                 android:paddingRight="10dp">
 
-                <ImageView
-                    android:id="@+id/notify_all_others_imageview"
+                <CheckBox
+                    android:id="@+id/notify_all_others_check"
+                    android:layout_gravity="center_vertical"
                     android:layout_width="30dp"
                     android:layout_height="30dp"
-                    android:layout_gravity="center_vertical"
-                    android:src="@drawable/notification_pause"
-                    android:scaleType="centerCrop" />
+                    android:checked="true" />
 
                 <TextView
                     android:layout_marginLeft="10dp"
