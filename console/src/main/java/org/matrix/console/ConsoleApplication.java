@@ -31,6 +31,7 @@ import org.matrix.console.activity.CommonActivityUtils;
 import org.matrix.console.contacts.ContactsManager;
 import org.matrix.console.contacts.PIDsRetriever;
 import org.matrix.console.ga.Analytics;
+import org.matrix.console.gcm.GcmRegistrationManager;
 import org.matrix.console.services.EventStreamService;
 import org.matrix.console.util.LogUtilities;
 
@@ -180,6 +181,13 @@ public class ConsoleApplication extends Application {
                     CommonActivityUtils.startEventStreamService(ConsoleApplication.this);
                 } else {
                     CommonActivityUtils.resumeEventStream(ConsoleApplication.this);
+
+                    // try to perform a GCM registration if it failed
+                    // or if the GCM server generated a new push key
+                    GcmRegistrationManager gcmRegistrationManager = Matrix.getInstance(this).getSharedGcmRegistrationManager();
+                    if (null != gcmRegistrationManager) {
+                        gcmRegistrationManager.checkPusherRegistration(this);
+                    }
                 }
             }
 

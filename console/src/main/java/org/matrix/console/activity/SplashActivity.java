@@ -172,12 +172,15 @@ public class SplashActivity extends MXCActionBarActivity {
             mGcmRegistrationManager.registerPusher(getApplicationContext(), new GcmRegistrationManager.GcmRegistrationIdListener() {
                 @Override
                 public void onPusherRegistered() {
+                    Log.d(LOG_TAG, "The GCM registration is done");
                     mPusherRegistrationComplete = true;
                     finishIfReady();
                 }
 
                 @Override
                 public void onPusherRegistrationFailed() {
+                    Log.d(LOG_TAG, "The GCM registration failed");
+
                     // fallback to the events service
                     Matrix.getInstance(SplashActivity.this).getSharedGcmRegistrationManager().setUseGCM(false);
 
@@ -193,7 +196,7 @@ public class SplashActivity extends MXCActionBarActivity {
                 }
             });
         } else if (mGcmRegistrationManager.useGCM()) {
-            mGcmRegistrationManager.reregisterSessions(null);
+            mGcmRegistrationManager.reregisterSessions(SplashActivity.this, null);
         }
 
         boolean noUpdate;
