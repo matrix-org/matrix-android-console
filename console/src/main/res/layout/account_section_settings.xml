@@ -26,7 +26,8 @@
             android:layout_alignParentTop="true"
             android:layout_alignParentLeft="true"
             android:layout_marginRight="10dp"
-            android:scaleType="centerCrop"/>
+            android:scaleType="centerCrop"
+            android:contentDescription="@string/settings_change_avatar"/>
 
         <EditText
             android:id="@+id/editText_displayName"

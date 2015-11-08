@@ -249,6 +249,7 @@
     <string name="settings_config_user_id">User ID: %s</string>
     <string name="settings_config_access_token">Access token: %s</string>
     <string name="settings_command_commands">The following commands are available in the room chat:\n\n /nick &#60;display_name&#62;&#58; change your display name\n /me &#60;action&#62;&#58; send the action you are doing. /me will be replaced by your display name\n /join &#60;room_alias&#62;&#58; join a room\n /kick &#60;user_id&#62; [&#60;reason>]&#58; kick the user\n /ban &#60;user_id&#62; [&#60;reason&#62;]&#58; ban the user\n /unban &#60;user_id&#62;&#58; unban the user\n /op &#60;user_id&#62; &#60;power_level&#62;&#58; set user power level\n /deop &#60;user_id&#62;&#58; reset user power level to the room default value</string>
+    <string name="settings_change_avatar">Change avatar</string>
     <string name="settings_failed_to_upload_avatar">Failed to upload avatar</string>
 
     <string name="settings_display_name_hint">Enter a display name</string>
