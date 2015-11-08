@@ -60,6 +60,7 @@
                     android:layout_weight="1"
                     style="@style/Base.TextAppearance.AppCompat.Caption"
                     android:text = "@string/settings_use_gcm"
+                    android:labelFor = "@+id/checkbox_useGcm"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"/>
                 <CheckBox
@@ -88,6 +89,7 @@
                 android:layout_weight="1"
                 style="@style/Base.TextAppearance.AppCompat.Caption"
                 android:text = "@string/settings_display_all_events"
+                    android:labelFor = "@+id/checkbox_displayAllEvents"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"/>
             <CheckBox
@@ -105,10 +107,11 @@
                 android:layout_weight="1"
                 style="@style/Base.TextAppearance.AppCompat.Caption"
                 android:text = "@string/settings_hide_unsupported_events"
+                    android:labelFor = "@+id/checkbox_hideUnsupportedEvenst"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"/>
             <CheckBox
-                android:id="@+id/checkbox_hideUnsupportedEvenst"
+               android:id="@+id/checkbox_hideUnsupportedEvenst"
                 android:layout_width="30dp"
                 android:layout_height="wrap_content"/>
         </LinearLayout>
@@ -122,6 +125,7 @@
                 android:layout_weight="1"
                 style="@style/Base.TextAppearance.AppCompat.Caption"
                 android:text = "@string/settings_sort_by_last_seen"
+                    android:labelFor = "@+id/checkbox_sortByLastSeen"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"/>
             <CheckBox
@@ -139,6 +143,7 @@
                 android:layout_weight="1"
                 style="@style/Base.TextAppearance.AppCompat.Caption"
                 android:text = "@string/settings_display_left_members"
+                    android:labelFor = "@+id/checkbox_displayLeftMembers"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"/>
             <CheckBox
@@ -156,6 +161,7 @@
                 android:layout_weight="1"
                 style="@style/Base.TextAppearance.AppCompat.Caption"
                 android:text = "@string/settings_display_public_rooms"
+                    android:labelFor = "@+id/checkbox_displayPublicRooms"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"/>
             <CheckBox
@@ -189,6 +195,7 @@
                 android:layout_weight="1"
                 style="@style/Base.TextAppearance.AppCompat.Caption"
                 android:text = "@string/settings_rage_shake"
+                    android:labelFor = "@+id/checkbox_rageshake"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"/>
             <CheckBox

@@ -144,17 +144,17 @@
                 android:layout_marginBottom="5dp"
                 android:paddingRight="10dp">
 
-                <ImageView
-                    android:id="@+id/contain_my_user_name_imageview"
+                <CheckBox
+                    android:id="@+id/contain_my_user_name_check"
+                    android:layout_gravity="center_vertical"
                     android:layout_width="30dp"
                     android:layout_height="30dp"
-                    android:layout_gravity="center_vertical"
-                    android:src="@drawable/notification_pause"
-                    android:scaleType="centerCrop" />
+                    android:checked="true" />
 
                 <TextView
                     android:layout_marginLeft="10dp"
                     android:text = "@string/notification_settings_contain_my_user_name"
+                    android:labelFor = "@+id/contain_my_user_name_check"
                     style="@style/Base.TextAppearance.AppCompat.Caption"
                     android:layout_gravity="center_vertical"
                     android:layout_width="wrap_content"
@@ -168,17 +168,17 @@
                 android:layout_marginBottom="5dp"
                 android:paddingRight="10dp">
 
-                <ImageView
-                    android:id="@+id/contain_my_display_name_imageview"
+                <CheckBox
+                    android:id="@+id/contain_my_display_name_check"
+                    android:layout_gravity="center_vertical"
                     android:layout_width="30dp"
                     android:layout_height="30dp"
-                    android:layout_gravity="center_vertical"
-                    android:src="@drawable/notification_pause"
-                    android:scaleType="centerCrop" />
+                    android:checked="true" />
 
                 <TextView
                     android:layout_marginLeft="10dp"
                     android:text = "@string/notification_settings_contain_my_display_name"
+                    android:labelFor = "@+id/contain_my_display_name_check"
                     style="@style/Base.TextAppearance.AppCompat.Caption"
                     android:layout_gravity="center_vertical"
                     android:layout_width="match_parent"
@@ -192,17 +192,17 @@
                 android:layout_marginBottom="5dp"
                 android:paddingRight="10dp">
 
-                <ImageView
-                    android:id="@+id/just_sent_to_me_imageview"
+                <CheckBox
+                    android:id="@+id/just_sent_to_me_check"
+                    android:layout_gravity="center_vertical"
                     android:layout_width="30dp"
                     android:layout_height="30dp"
-                    android:layout_gravity="center_vertical"
-                    android:src="@drawable/notification_pause"
-                    android:scaleType="centerCrop" />
+                    android:checked="true" />
 
                 <TextView
                     android:layout_marginLeft="10dp"
                     android:text = "@string/notification_settings_just_sent_to_me"
+                    android:labelFor = "@+id/just_sent_to_me_check"
                     style="@style/Base.TextAppearance.AppCompat.Caption"
                     android:layout_gravity="center_vertical"
                     android:layout_width="match_parent"
@@ -216,17 +216,17 @@
                 android:layout_marginBottom="5dp"
                 android:paddingRight="10dp">
 
-                <ImageView
-                    android:id="@+id/invite_to_new_room_imageview"
+                <CheckBox
+                    android:id="@+id/invite_to_new_room_check"
+                    android:layout_gravity="center_vertical"
                     android:layout_width="30dp"
                     android:layout_height="30dp"
-                    android:layout_gravity="center_vertical"
-                    android:src="@drawable/notification_pause"
-                    android:scaleType="centerCrop" />
+                    android:checked="true" />
 
                 <TextView
                     android:layout_marginLeft="10dp"
                     android:text = "@string/notification_settings_invite_to_a_new_room"
+                    android:labelFor = "@+id/invite_to_new_room_check"
                     style="@style/Base.TextAppearance.AppCompat.Caption"
                     android:layout_gravity="center_vertical"
                     android:layout_width="match_parent"
@@ -240,17 +240,17 @@
                 android:layout_marginBottom="5dp"
                 android:paddingRight="10dp">
 
-                <ImageView
-                    android:id="@+id/people_leave_join_room_imageview"
+                <CheckBox
+                    android:id="@+id/people_leave_join_room_check"
+                    android:layout_gravity="center_vertical"
                     android:layout_width="30dp"
                     android:layout_height="30dp"
-                    android:layout_gravity="center_vertical"
-                    android:src="@drawable/notification_pause"
-                    android:scaleType="centerCrop" />
+                    android:checked="true" />
 
                 <TextView
                     android:layout_marginLeft="10dp"
                     android:text = "@string/notification_settings_people_join_leave_rooms"
+                    android:labelFor = "@+id/people_leave_join_room_check"
                     style="@style/Base.TextAppearance.AppCompat.Caption"
                     android:layout_gravity="center_vertical"
                     android:layout_width="match_parent"
@@ -264,17 +264,17 @@
                 android:layout_marginBottom="5dp"
                 android:paddingRight="10dp">
 
-                <ImageView
-                    android:id="@+id/receive_a_call_imageview"
+                <CheckBox
+                    android:id="@+id/receive_a_call_check"
+                    android:layout_gravity="center_vertical"
                     android:layout_width="30dp"
                     android:layout_height="30dp"
-                    android:layout_gravity="center_vertical"
-                    android:src="@drawable/notification_pause"
-                    android:scaleType="centerCrop" />
+                    android:checked="true" />
 
                 <TextView
                     android:layout_marginLeft="10dp"
                     android:text = "@string/notification_settings_receive_a_call"
+                    android:labelFor = "@+id/receive_a_call_check"
                     style="@style/Base.TextAppearance.AppCompat.Caption"
                     android:layout_gravity="center_vertical"
                     android:layout_width="match_parent"
@@ -288,17 +288,17 @@
                 android:layout_marginBottom="5dp"
                 android:paddingRight="10dp">
 
-                <ImageView
-                    android:id="@+id/suppress_from_bots_imageview"
+                <CheckBox
+                    android:id="@+id/suppress_from_bots_check"
+                    android:layout_gravity="center_vertical"
                     android:layout_width="30dp"
                     android:layout_height="30dp"
-                    android:layout_gravity="center_vertical"
-                    android:src="@drawable/notification_pause"
-                    android:scaleType="centerCrop" />
+                    android:checked="true" />
 
                 <TextView
                     android:layout_marginLeft="10dp"
                     android:text = "@string/notification_settings_suppress_from_bots"
+                    android:labelFor = "@+id/suppress_from_bots_check"
                     style="@style/Base.TextAppearance.AppCompat.Caption"
                     android:layout_gravity="center_vertical"
                     android:layout_width="match_parent"
@@ -322,17 +322,17 @@
                 android:layout_marginBottom="5dp"
                 android:paddingRight="10dp">
 
-                <ImageView
-                    android:id="@+id/notify_all_others_imageview"
+                <CheckBox
+                    android:id="@+id/notify_all_others_check"
+                    android:layout_gravity="center_vertical"
                     android:layout_width="30dp"
                     android:layout_height="30dp"
-                    android:layout_gravity="center_vertical"
-                    android:src="@drawable/notification_pause"
-                    android:scaleType="centerCrop" />
+                    android:checked="true" />
 
                 <TextView
                     android:layout_marginLeft="10dp"
                     android:text = "@string/notification_settings_notify_all_other"
+                    android:labelFor = "@+id/notify_all_others_check"
                     style="@style/Base.TextAppearance.AppCompat.Caption"
                     android:layout_gravity="center_vertical"
                     android:layout_width="match_parent"

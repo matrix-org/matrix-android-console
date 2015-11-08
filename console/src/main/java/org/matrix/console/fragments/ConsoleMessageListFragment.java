@@ -28,6 +28,9 @@ import android.os.Bundle;
 import android.support.v4.app.FragmentManager;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
+import android.text.Spannable;
+import android.text.SpannableStringBuilder;
+import android.text.TextUtils;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ArrayAdapter;
@@ -44,6 +47,8 @@ import org.matrix.androidsdk.rest.model.Event;
 import org.matrix.androidsdk.rest.model.FileMessage;
 import org.matrix.androidsdk.rest.model.ImageMessage;
 import org.matrix.androidsdk.rest.model.Message;
+import org.matrix.androidsdk.rest.model.Receipt;
+import org.matrix.androidsdk.rest.model.RoomMember;
 import org.matrix.androidsdk.rest.model.VideoMessage;
 import org.matrix.androidsdk.util.EventDisplay;
 import org.matrix.androidsdk.util.JsonUtils;
@@ -60,10 +65,16 @@ import org.matrix.console.db.ConsoleContentProvider;
 import org.matrix.console.util.SlidableImageInfo;
 
 import java.io.File;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
+
 
 public class ConsoleMessageListFragment extends MatrixMessageListFragment {
+
+    private static final String TAG_FRAGMENT_RECEIPTS_DIALOG = "ConsoleMessageListFragment.TAG_FRAGMENT_RECEIPTS_DIALOG";
 
     public static ConsoleMessageListFragment newInstance(String matrixId, String roomId, int layoutResId) {
         ConsoleMessageListFragment f = new ConsoleMessageListFragment();
@@ -513,7 +524,7 @@ public class ConsoleMessageListFragment extends MatrixMessageListFragment {
 
     public void onSenderNameClick(String userId, String displayName) {
         if (getActivity() instanceof RoomActivity) {
-            ((RoomActivity)getActivity()).insertInTextEditor(displayName);
+            ((RoomActivity)getActivity()).insertInTextEditor(mRoom.getLiveState().getMemberName(userId));
         }
     }
 
@@ -600,5 +611,40 @@ public class ConsoleMessageListFragment extends MatrixMessageListFragment {
             builderSingle.show();
         } catch (Exception e) {
         }
+    }
+
+    public void onReadReceiptClick(String eventId, String userId, Receipt receipt) {
+        RoomMember member = mRoom.getMember(userId);
+
+        // sanity check
+        if (null != member) {
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+
+            SpannableStringBuilder body = new SpannableStringBuilder(getActivity().getString(R.string.read_receipt) + " : " + dateFormat.format(new Date(receipt.originServerTs)));
+            body.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD), 0, getActivity().getString(R.string.read_receipt).length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+            new AlertDialog.Builder(ConsoleApplication.getCurrentActivity())
+                    .setTitle(member.getName())
+                    .setMessage(body)
+                    .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            dialog.dismiss();
+                        }
+                    })
+                            .create()
+                            .show();
+        }
+    }
+
+    public void onMoreReadReceiptClick(String eventId) {
+        FragmentManager fm = getActivity().getSupportFragmentManager();
+
+        ReadReceiptsDialogFragment fragment = (ReadReceiptsDialogFragment) fm.findFragmentByTag(TAG_FRAGMENT_RECEIPTS_DIALOG);
+        if (fragment != null) {
+            fragment.dismissAllowingStateLoss();
+        }
+        fragment = ReadReceiptsDialogFragment.newInstance(mSession, mRoom.getRoomId(), eventId);
+        fragment.show(fm, TAG_FRAGMENT_RECEIPTS_DIALOG);
     }
 }

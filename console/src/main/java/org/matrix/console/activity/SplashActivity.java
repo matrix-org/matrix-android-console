@@ -15,7 +15,9 @@
  */
 package org.matrix.console.activity;
 
+import android.app.Activity;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 
@@ -46,15 +48,31 @@ public class SplashActivity extends MXCActionBarActivity {
     private HashMap<MXSession, IMXEventListener> mListeners;
     private HashMap<MXSession, IMXEventListener> mDoneListeners;
 
+    private boolean hasCorruptedStore() {
+        boolean hasCorruptedStore = false;
+        ArrayList<MXSession> sessions = Matrix.getMXSessions(this);
+
+        for(MXSession session : sessions) {
+            if (session.isActive()) {
+                hasCorruptedStore |= session.getDataHandler().getStore().isCorrupted();
+            }
+        }
+        return hasCorruptedStore;
+    }
+
     private void finishIfReady() {
         Log.e(LOG_TAG, "finishIfReady " + mInitialSyncComplete + " " + mPusherRegistrationComplete);
 
         if (mInitialSyncComplete && mPusherRegistrationComplete) {
             Log.e(LOG_TAG, "finishIfRead start HomeActivity");
 
-            // Go to the home page
-            startActivity(new Intent(SplashActivity.this, HomeActivity.class));
-            SplashActivity.this.finish();
+            if (!hasCorruptedStore()) {
+                // Go to the home page
+                startActivity(new Intent(SplashActivity.this, HomeActivity.class));
+                SplashActivity.this.finish();
+            } else {
+                CommonActivityUtils.logout(this);
+            }
         }
     }
 
@@ -154,18 +172,31 @@ public class SplashActivity extends MXCActionBarActivity {
             mGcmRegistrationManager.registerPusher(getApplicationContext(), new GcmRegistrationManager.GcmRegistrationIdListener() {
                 @Override
                 public void onPusherRegistered() {
+                    Log.d(LOG_TAG, "The GCM registration is done");
                     mPusherRegistrationComplete = true;
                     finishIfReady();
                 }
 
                 @Override
                 public void onPusherRegistrationFailed() {
+                    Log.d(LOG_TAG, "The GCM registration failed");
+
+                    // fallback to the events service
+                    Matrix.getInstance(SplashActivity.this).getSharedGcmRegistrationManager().setUseGCM(false);
+
+                    SplashActivity.this.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            CommonActivityUtils.onGcmUpdate(SplashActivity.this);
+                        }
+                    });
+
                     // can register it ignore
                     onPusherRegistered();
                 }
             });
         } else if (mGcmRegistrationManager.useGCM()) {
-            mGcmRegistrationManager.reregisterSessions(null);
+            mGcmRegistrationManager.reregisterSessions(SplashActivity.this, null);
         }
 
         boolean noUpdate;

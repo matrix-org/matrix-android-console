@@ -70,6 +70,7 @@
     <string name="send_files_in">Send into</string>
     <string name="save_files_in">Save into</string>
     <string name="file_is_saved">%1$s is saved.</string>
+    <string name="read_receipt">Read</string>
 
     <string name="downloads">Downloads</string>
     <string name="gallery">Gallery</string>
@@ -129,6 +130,10 @@
     <!-- members list Screen -->
     <string name="members_list">Members List</string>
 
+
+    <!-- read receipts list Screen -->
+    <string name="read_receipts_list">Read Receipts List</string>
+
     <!-- accounts list Screen -->
     <string name="choose_account">Choose account</string>
 
@@ -160,6 +165,8 @@
     <string name="room_info_room_name_hint">Enter a room name</string>
     <string name="room_info_room_topic">Room topic</string>
     <string name="room_info_room_topic_hint">Enter a room topic</string>
+    <string name="room_info_room_canonical_alias">Canonical alias</string>
+    <string name="room_info_room_canonical_hint">Enter a canonical alias</string>
     <string name="room_info_room_discard_changes">Discard changes ?</string>
     <string name="room_info_room_discard">Discard</string>
 
@@ -216,6 +223,7 @@
     <string name="notification_settings_select_room">Select a room</string>
 
     <string name="notification_settings_add">Add</string>
+    <string name="notification_settings_enabled">Enabled</string>
 
     <string name="notification_settings_other_alerts">Other Alerts</string>
     <string name="notification_settings_contain_my_user_name">Notify me with sound about messages that contain my user name</string>
@@ -241,6 +249,7 @@
     <string name="settings_config_user_id">User ID: %s</string>
     <string name="settings_config_access_token">Access token: %s</string>
     <string name="settings_command_commands">The following commands are available in the room chat:\n\n /nick &#60;display_name&#62;&#58; change your display name\n /me &#60;action&#62;&#58; send the action you are doing. /me will be replaced by your display name\n /join &#60;room_alias&#62;&#58; join a room\n /kick &#60;user_id&#62; [&#60;reason>]&#58; kick the user\n /ban &#60;user_id&#62; [&#60;reason&#62;]&#58; ban the user\n /unban &#60;user_id&#62;&#58; unban the user\n /op &#60;user_id&#62; &#60;power_level&#62;&#58; set user power level\n /deop &#60;user_id&#62;&#58; reset user power level to the room default value</string>
+    <string name="settings_change_avatar">Change avatar</string>
     <string name="settings_failed_to_upload_avatar">Failed to upload avatar</string>
 
     <string name="settings_display_name_hint">Enter a display name</string>

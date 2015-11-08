@@ -79,6 +79,7 @@ public class CallViewActivity extends FragmentActivity {
 
     // sounds management
     private static MediaPlayer mRingingPLayer = null;
+    private static MediaPlayer mRingbackPlayer = null;
     private static MediaPlayer mCallEndPlayer = null;
     private static final int DEFAULT_PERCENT_VOLUME = 10;
     private static final int FIRST_PERCENT_VOLUME = 10;
@@ -88,12 +89,16 @@ public class CallViewActivity extends FragmentActivity {
     private IMXCall.MXCallListener mListener = new IMXCall.MXCallListener() {
         @Override
         public void onStateDidChange(String state) {
-            mCallView.post(new Runnable() {
-                @Override
-                public void run() {
-                    manageSubViews();
-                }
-            });
+            if (null != getInstance()) {
+            	final String fState = state;
+                CallViewActivity.this.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Log.d(LOG_TAG, "onStateDidChange " + fState);
+                        manageSubViews();
+                    }
+                });
+            }
         }
 
         /**
@@ -117,6 +122,8 @@ public class CallViewActivity extends FragmentActivity {
         public void onCallError(String error) {
             Context context = getInstance();
 
+            Log.d(LOG_TAG, "onCallError " + error);
+
             if (null != context) {
                 if (IMXCall.CALL_ERROR_USER_NOT_RESPONDING.equals(error)) {
                     showToast(context.getString(R.string.call_error_user_not_responding));
@@ -130,12 +137,16 @@ public class CallViewActivity extends FragmentActivity {
 
         @Override
         public void onViewLoading(View callview) {
+            Log.d(LOG_TAG, "onViewLoading");
+
             mCallView = callview;
             insertCallView(mOtherMember.avatarUrl);
         }
 
         @Override
         public void onViewReady() {
+            Log.d(LOG_TAG, "onViewReady");
+
             if (!mCall.isIncoming()) {
                 mCall.placeCall();
             } else {
@@ -148,9 +159,16 @@ public class CallViewActivity extends FragmentActivity {
          */
         @Override
         public void onCallAnsweredElsewhere() {
-            mIsAnsweredElsewhere = true;
-            clearCallData();
-            CallViewActivity.this.finish();
+            CallViewActivity.this.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    Log.d(LOG_TAG, "onCallAnsweredElsewhere");
+
+                    mIsAnsweredElsewhere = true;
+                    clearCallData();
+                    CallViewActivity.this.finish();
+                }
+            });
         }
 
         @Override
@@ -158,6 +176,8 @@ public class CallViewActivity extends FragmentActivity {
             CallViewActivity.this.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
+                    Log.d(LOG_TAG, "onCallEnd");
+
                     clearCallData();
                     mIsCallEnded = true;
                     CallViewActivity.this.finish();
@@ -442,6 +462,7 @@ public class CallViewActivity extends FragmentActivity {
         // sanity check
         // the call could have been destroyed between call.
         if (null == mCall) {
+            Log.d(LOG_TAG, "manageSubViews nothing to do");
             return;
         }
 
@@ -500,6 +521,8 @@ public class CallViewActivity extends FragmentActivity {
         }
 
         String callState = mCall.getCallState();
+
+        Log.d(LOG_TAG, "manageSubViews callState : " + callState);
 
         // hide / show avatar
         ImageView avatarView = (ImageView)CallViewActivity.this.findViewById(R.id.call_other_member);
@@ -597,7 +620,11 @@ public class CallViewActivity extends FragmentActivity {
                 mAcceptButton.setAlpha(1.0f);
                 mAcceptButton.setEnabled(true);
 
-                startRinging(CallViewActivity.this);
+                if (mCall.isIncoming()) {
+                    startRinging(CallViewActivity.this);
+                } else {
+                    startRingbackSound(CallViewActivity.this);
+                }
             }
         }
     }
@@ -691,7 +718,7 @@ public class CallViewActivity extends FragmentActivity {
     /**
      * @return true if the ringing sound is played
      */
-    private static Boolean isRinging() {
+    public static Boolean isRinging() {
         if (null != mRingingPLayer) {
             return mRingingPLayer.isPlaying();
         }
@@ -702,10 +729,15 @@ public class CallViewActivity extends FragmentActivity {
      * Start the ringing sound
      */
     public static void startRinging(Context context) {
+        Log.d(LOG_TAG, "startRinging");
+
         if (null == mRingingPLayer) {
             mRingingPLayer = MediaPlayer.create(context.getApplicationContext(), R.raw.ring);
-            mRingingPLayer.setLooping(true);
-            mRingingPLayer.setVolume(1.0f, 1.0f);
+
+            if (null != mRingingPLayer) {
+                mRingingPLayer.setLooping(true);
+                mRingingPLayer.setVolume(1.0f, 1.0f);
+            }
         }
 
         if (null != mRingingPLayer) {
@@ -715,6 +747,11 @@ public class CallViewActivity extends FragmentActivity {
                 if ((null != mCallEndPlayer) && mCallEndPlayer.isPlaying()) {
                     mCallEndPlayer.stop();
                 }
+
+                if ((null != mRingbackPlayer) && mRingbackPlayer.isPlaying()) {
+                    mRingbackPlayer.stop();
+                }
+
                 MXCallsManager.setSpeakerphoneOn(context, true);
                 mRingingPLayer.start();
             }
@@ -722,12 +759,60 @@ public class CallViewActivity extends FragmentActivity {
     }
 
     /**
+     * Start the ringback sound
+     */
+    public static void startRingbackSound(Context context) {
+        Log.d(LOG_TAG, "startRingbackSound");
+
+        if (null == mRingbackPlayer) {
+            mRingbackPlayer = MediaPlayer.create(context.getApplicationContext(), R.raw.ringback);
+
+            if (null != mRingbackPlayer) {
+                mRingbackPlayer.setLooping(true);
+                mRingbackPlayer.setVolume(1.0f, 1.0f);
+            }
+        }
+
+        if (null != mRingbackPlayer) {
+            // check if it is not yet playing
+            if (!mRingbackPlayer.isPlaying()) {
+                // stop pending
+                if ((null != mCallEndPlayer) && mCallEndPlayer.isPlaying()) {
+                    mCallEndPlayer.stop();
+                }
+
+                if ((null != mRingingPLayer) && mRingingPLayer.isPlaying()) {
+                    mRingingPLayer.stop();
+                }
+
+                MXCallsManager.setSpeakerphoneOn(context, true);
+                mRingbackPlayer.start();
+            }
+        }
+    }
+    /**
      * Stop the ringing sound
      */
     public static void stopRinging() {
+        Log.d(LOG_TAG, "stopRinging");
+
         // sanity checks
         if ((null != mRingingPLayer) && mRingingPLayer.isPlaying()) {
-            mRingingPLayer.pause();
+            Log.d(LOG_TAG, "stop mRingingPLayer");
+            try {
+                mRingingPLayer.pause();
+            } catch (Exception e) {
+                Log.e(LOG_TAG, "stop mRingingPLayer failed " + e.getLocalizedMessage());
+            }
+        }
+        if ((null != mRingbackPlayer) && mRingbackPlayer.isPlaying()) {
+            Log.d(LOG_TAG, "stop mRingbackPlayer");
+
+            try {
+                mRingbackPlayer.pause();
+            } catch (Exception e) {
+                Log.e(LOG_TAG, "stop mRingbackPlayer failed " + e.getLocalizedMessage());
+            }
         }
     }
 
@@ -735,6 +820,8 @@ public class CallViewActivity extends FragmentActivity {
      * Start the end call sound
      */
     public static void startEndCallSound(Context context) {
+        Log.d(LOG_TAG, "startEndCallSound");
+
         if (null == mCallEndPlayer) {
             mCallEndPlayer = MediaPlayer.create(context.getApplicationContext(), R.raw.callend);
             mCallEndPlayer.setLooping(false);

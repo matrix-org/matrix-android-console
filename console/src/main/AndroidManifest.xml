@@ -88,6 +88,10 @@
             android:label="@string/create_account" >
         </activity>
         <activity
+            android:name="org.matrix.console.activity.FallbackLoginActivity"
+            android:label="@string/login" >
+        </activity>
+        <activity
             android:name="org.matrix.console.activity.SplashActivity"
             android:theme="@style/AppTheme.NoActionBar">
         </activity>

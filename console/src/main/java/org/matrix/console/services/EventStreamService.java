@@ -28,6 +28,7 @@ import android.os.IBinder;
 import android.os.PowerManager;
 import android.text.TextUtils;
 import android.util.Log;
+import android.widget.Toast;
 
 import org.matrix.androidsdk.MXSession;
 import org.matrix.androidsdk.data.IMXStore;
@@ -135,10 +136,20 @@ public class EventStreamService extends Service {
          * @param event the hangup event.
          */
         private void manageHangUpEvent(Event event) {
+            // check if the user answer from another device
+            if (Event.EVENT_TYPE_CALL_ANSWER.equals(event.type)) {
+                MXSession session = Matrix.getMXSession(getApplicationContext(), event.getMatrixId());
+
+                // ignore the answer event if it was sent by another member
+                if (!TextUtils.equals(event.userId, session.getCredentials().userId)) {
+                    return;
+                }
+            }
+
             String callId = null;
 
             try {
-                callId = event.content.get("call_id").getAsString();
+                callId = event.getContentAsJsonObject().get("call_id").getAsString();
             } catch (Exception e) {}
 
             if (null != callId) {
@@ -146,6 +157,7 @@ public class EventStreamService extends Service {
                 hidePendingCallNotification(callId);
             }
 
+            Log.d(LOG_TAG, "manageHangUpEvent stopRinging");
             CallViewActivity.stopRinging();
         }
 
@@ -162,37 +174,8 @@ public class EventStreamService extends Service {
 
         @Override
         public void onLiveEvent(Event event, RoomState roomState) {
-            if (Event.EVENT_TYPE_CALL_HANGUP.equals(event.type)) {
+            if (Event.EVENT_TYPE_CALL_HANGUP.equals(event.type) || Event.EVENT_TYPE_CALL_ANSWER.equals(event.type)) {
                 manageHangUpEvent(event);
-            }
-
-            if ((event.roomId != null) && isDisplayableEvent(event)) {
-                ViewedRoomTracker rTracker = ViewedRoomTracker.getInstance();
-                String viewedRoomId = rTracker.getViewedRoomId();
-                String fromMatrixId = rTracker.getMatrixId();
-
-                Matrix matrix = Matrix.getInstance(EventStreamService.this);
-                RoomSummary summary = null;
-
-                // sanity check
-                if (null != matrix) {
-                    MXSession session = matrix.getSession(event.getMatrixId());
-
-                    // sanity check
-                    if (null != session) {
-                        summary = session.getDataHandler().getStore().getSummary(event.roomId);
-                    }
-                }
-
-                // existing summary ?
-                if (null != summary) {
-                    // If we're not currently viewing this room or not sent by myself, increment the unread count
-                    if (ConsoleApplication.isAppInBackground() || (!event.roomId.equals(viewedRoomId) || !event.getMatrixId().equals(fromMatrixId)) && !event.userId.equals(event.getMatrixId())) {
-                        summary.incrementUnreadMessagesCount();
-                    } else {
-                        summary.resetUnreadMessagesCount();
-                    }
-                }
             }
         }
 
@@ -209,7 +192,7 @@ public class EventStreamService extends Service {
 
             String senderID = event.userId;
             // FIXME: Support event contents with no body
-            if (!event.content.has("body")) {
+            if (!event.content.getAsJsonObject().has("body")) {
                 // only the membership events are supported
                 if (!Event.EVENT_TYPE_STATE_ROOM_MEMBER.equals(event.type) && !event.isCallEvent()) {
                     return;
@@ -254,7 +237,7 @@ public class EventStreamService extends Service {
                     body = getApplicationContext().getString(R.string.incoming_call);
 
                     try {
-                        mNotifiedCallId = event.content.get("call_id").getAsString();
+                        mNotifiedCallId = event.getContentAsJsonObject().get("call_id").getAsString();
                      } catch (Exception e) {}
                 } else {
                     EventDisplay eventDisplay = new EventDisplay(getApplicationContext(), event, room.getLiveState());
@@ -264,11 +247,11 @@ public class EventStreamService extends Service {
                 body = EventDisplay.getMembershipNotice(getApplicationContext(), event, roomState);
 
                 try {
-                    isInvitationEvent = "invite".equals(event.content.getAsJsonPrimitive("membership").getAsString());
+                    isInvitationEvent = "invite".equals(event.getContentAsJsonObject().getAsJsonPrimitive("membership").getAsString());
                 } catch (Exception e) {}
 
             } else {
-                body = event.content.getAsJsonPrimitive("body").getAsString();
+                body = event.getContentAsJsonObject().getAsJsonPrimitive("body").getAsString();
             }
 
             int unreadNotifForThisUser = 0;
@@ -329,6 +312,7 @@ public class EventStreamService extends Service {
 
             if (bingRule.isCallRingNotificationSound(bingRule.notificationSound())) {
                 if (null == CallViewActivity.getActiveCall()) {
+                    Log.d(LOG_TAG, "onBingEvent starting");
                     CallViewActivity.startRinging(EventStreamService.this);
                 }
             }
@@ -368,6 +352,24 @@ public class EventStreamService extends Service {
                 mLatestNotification = null;
             }
 
+            // special catchup cases
+            if (mState == StreamAction.CATCHUP) {
+
+                Boolean hasActiveCalls = false;
+
+                for(MXSession session : mSessions) {
+                    hasActiveCalls |= session.mCallsManager.hasActiveCalls();
+                }
+
+                // if there are some active calls, the catchup should not be stopped.
+                // because an user could answer to a call from another device.
+                // there will no push because it is his own message.
+                // so, the client has no choice to catchup until the ring is shutdown
+                if (hasActiveCalls) {
+                    Log.d(LOG_TAG, "Catchup again because there are active calls");
+                    catchup();
+                }
+            }
         }
 
 
@@ -517,7 +519,8 @@ public class EventStreamService extends Service {
                     }
 
                     @Override
-                    public void onStoreCorrupted(String accountId) {
+                    public void onStoreCorrupted(String accountId, String description) {
+                        Toast.makeText(getApplicationContext(), accountId + " : " + description, Toast.LENGTH_LONG).show();
                         startEventStream(fSession, store);
                     }
                 });
