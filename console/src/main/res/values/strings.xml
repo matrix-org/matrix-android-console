@@ -223,6 +223,7 @@
     <string name="notification_settings_select_room">Select a room</string>
 
     <string name="notification_settings_add">Add</string>
+    <string name="notification_settings_enabled">Enabled</string>
 
     <string name="notification_settings_other_alerts">Other Alerts</string>
     <string name="notification_settings_contain_my_user_name">Notify me with sound about messages that contain my user name</string>
