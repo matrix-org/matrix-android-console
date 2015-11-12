@@ -70,7 +70,8 @@
             android:layout_height="wrap_content"
             android:layout_gravity="right"
             android:background="@android:drawable/ic_menu_send"
-            android:textColor="#000" />
+            android:textColor="#000"
+            android:contentDescription="@string/send"/>
     </LinearLayout>
 
 
