@@ -123,8 +123,6 @@ public class RoomActivity extends MXCActionBarActivity {
     private static final String PENDING_MIMETYPE = "PENDING_MIMETYPE";
     private static final String PENDING_FILENAME = "PENDING_FILENAME";
 
-    private static final String FIRST_VISIBLE_ROW = "FIRST_VISIBLE_ROW";
-
     private static final String CAMERA_VALUE_TITLE = "attachment"; // Samsung devices need a filepath to write to or else won't return a Uri (!!!)
 
     // defines the command line operations
@@ -185,9 +183,6 @@ public class RoomActivity extends MXCActionBarActivity {
     private Timer mTypingTimer = null;
     private TimerTask mTypingTimerTask;
     private long  mLastTypingDate = 0;
-
-    // scroll to a dedicated index
-    private int mScrollToIndex = -1;
 
     private Boolean mIgnoreTextUpdate = false;
 
@@ -792,21 +787,8 @@ public class RoomActivity extends MXCActionBarActivity {
             savedInstanceState.putString(PENDING_FILENAME, mPendingFilename);
             Log.d(LOG_TAG, "onSaveInstanceState mPendingFilename " + mPendingFilename);
         }
-
-        savedInstanceState.putInt(FIRST_VISIBLE_ROW, mConsoleMessageListFragment.mMessageListView.getFirstVisiblePosition());
     }
-
-    @Override
-    protected void onRestoreInstanceState(Bundle savedInstanceState) {
-        super.onRestoreInstanceState(savedInstanceState);
-
-        if (savedInstanceState.containsKey(FIRST_VISIBLE_ROW)) {
-            // the scroll will be done in resume.
-            // the listView will be refreshed so the offset might be lost.
-            mScrollToIndex = savedInstanceState.getInt(FIRST_VISIBLE_ROW);
-        }
-    }
-
+    
     /**
      *
      */
@@ -886,18 +868,6 @@ public class RoomActivity extends MXCActionBarActivity {
 
         // refresh the UI : the timezone could have been updated
         mConsoleMessageListFragment.refresh();
-
-        // the device has been rotated
-        // so try to keep the same top/left item;
-        if (mScrollToIndex > 0) {
-            mConsoleMessageListFragment.mMessageListView.post(new Runnable() {
-                @Override
-                public void run() {
-                    mConsoleMessageListFragment.mMessageListView.setSelection(mScrollToIndex);
-                    mScrollToIndex = -1;
-                }
-            });
-        }
 
         if (null != mCallId) {
             IMXCall call = CallViewActivity.getActiveCall();
