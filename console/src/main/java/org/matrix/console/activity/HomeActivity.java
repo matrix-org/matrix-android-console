@@ -687,9 +687,7 @@ public class HomeActivity extends MXCActionBarActivity {
                                 // until the initial sync is done (that is, only refresh the list when there
                                 // are new rooms created AFTER we have synced).
                                 if (mInitialSyncComplete) {
-                                    if (Event.EVENT_TYPE_STATE_ROOM_CREATE.equals(event.type)) {
-                                        addNewRoom(event.roomId);
-                                    } else if (Event.EVENT_TYPE_STATE_ROOM_MEMBER.equals(event.type)) {
+                                    if (Event.EVENT_TYPE_STATE_ROOM_MEMBER.equals(event.type)) {
                                         RoomMember member = JsonUtils.toRoomMember(event.content);
 
                                         // add the room summary if the user has
@@ -749,6 +747,8 @@ public class HomeActivity extends MXCActionBarActivity {
                 if (null != summary) {
                     addSummary(summary);
                     mAdapter.sortSummaries();
+                } else {
+                    Log.e(LOG_TAG, "addNewRoom : null summary for room " + roomId);
                 }
             }
 
