@@ -744,8 +744,12 @@ public class HomeActivity extends MXCActionBarActivity {
 
             private void addNewRoom(String roomId) {
                 RoomSummary summary = session.getDataHandler().getStore().getSummary(roomId);
-                addSummary(summary);
-                mAdapter.sortSummaries();
+
+                // sanity checks
+                if (null != summary) {
+                    addSummary(summary);
+                    mAdapter.sortSummaries();
+                }
             }
 
             private boolean isMembershipInRoom(String membership, String selfUserId, RoomSummary summary) {
