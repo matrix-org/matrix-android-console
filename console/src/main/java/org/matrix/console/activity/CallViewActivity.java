@@ -16,11 +16,19 @@
 
 package org.matrix.console.activity;
 
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
+import android.media.AudioAttributes;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.media.Ringtone;
+import android.media.RingtoneManager;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
+import android.provider.MediaStore;
 import android.support.v4.app.FragmentActivity;
 import android.text.TextUtils;
 import android.util.Log;
@@ -42,6 +50,10 @@ import org.matrix.console.ConsoleApplication;
 import org.matrix.console.Matrix;
 import org.matrix.console.R;
 import org.matrix.console.services.EventStreamService;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
 
 public class CallViewActivity extends FragmentActivity {
     private static final String LOG_TAG = "CallViewActivity";
@@ -78,9 +90,14 @@ public class CallViewActivity extends FragmentActivity {
     private TextView mCallStateTextView;
 
     // sounds management
-    private static MediaPlayer mRingingPLayer = null;
+    private static MediaPlayer mRingingPlayer = null;
     private static MediaPlayer mRingbackPlayer = null;
     private static MediaPlayer mCallEndPlayer = null;
+
+    private static Ringtone mRingTone = null;
+    private static Ringtone mRingbackTone = null;
+    private static Ringtone mCallEndTone = null;
+
     private static final int DEFAULT_PERCENT_VOLUME = 10;
     private static final int FIRST_PERCENT_VOLUME = 10;
     private static boolean firstCallAlert = true;
@@ -669,6 +686,86 @@ public class CallViewActivity extends FragmentActivity {
     }
 
     /**
+     * Provices a ringtone from a resource and a filename.
+     * The audio file must have a ANDROID_LOOP metatada set to true to loop the sound.
+     * @param resid The audio resource.
+     * @param filename the audio filename
+     * @return a RingTone, null if the operation fails.
+     */
+    static Ringtone getRingTone(Context context, int resid, String filename) {
+        Ringtone ringtone = null;
+
+        try {
+            Uri ringToneUri = null;
+            File directory = new File(Environment.getExternalStorageDirectory(), "/" + context.getApplicationContext().getPackageName().hashCode() + "/Audio/");
+
+            // create the directory if it does not exist
+            if (!directory.exists()) {
+                directory.mkdirs();
+            }
+
+            File file = new File(directory + "/", filename);
+
+            // if the file exists, check if the resource has been created
+            if (file.exists()) {
+                Cursor cursor = context.getContentResolver().query(
+                        MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                        new String[] { MediaStore.Audio.Media._ID },
+                        MediaStore.Audio.Media.DATA + "=? ",
+                        new String[] {file.getAbsolutePath()}, null);
+
+                if ((null != cursor) && cursor.moveToFirst()) {
+                    int id = cursor.getInt(cursor.getColumnIndex(MediaStore.MediaColumns._ID));
+                    ringToneUri = Uri.withAppendedPath(Uri.parse("content://media/external/audio/media"), "" + id);
+                }
+            }
+
+            // the Uri has been received
+            if (null == ringToneUri) {
+                // create the file
+                if (!file.exists()) {
+                    try {
+                        byte[] readData = new byte[1024];
+                        InputStream fis = context.getResources().openRawResource(resid);
+                        FileOutputStream fos = new FileOutputStream(file);
+                        int i = fis.read(readData);
+
+                        while (i != -1) {
+                            fos.write(readData, 0, i);
+                            i = fis.read(readData);
+                        }
+
+                        fos.close();
+                    } catch (Exception e) {
+                    }
+                }
+
+                // and the resource Uri
+                ContentValues values = new ContentValues();
+                values.put(MediaStore.MediaColumns.DATA, file.getAbsolutePath());
+                values.put(MediaStore.MediaColumns.TITLE, filename);
+                values.put(MediaStore.MediaColumns.MIME_TYPE, "audio/ogg");
+                values.put(MediaStore.MediaColumns.SIZE, file.length());
+                values.put(MediaStore.Audio.Media.ARTIST, R.string.app_name);
+                values.put(MediaStore.Audio.Media.IS_RINGTONE, true);
+                values.put(MediaStore.Audio.Media.IS_NOTIFICATION, true);
+                values.put(MediaStore.Audio.Media.IS_ALARM, true);
+                values.put(MediaStore.Audio.Media.IS_MUSIC, true);
+
+                ringToneUri = context.getContentResolver() .insert(MediaStore.Audio.Media.getContentUriForPath(file.getAbsolutePath()), values);
+            }
+
+            if (null != ringToneUri) {
+                ringtone = RingtoneManager.getRingtone(context, ringToneUri);
+            }
+        } catch (Exception e) {
+
+        }
+
+        return ringtone;
+    }
+
+    /**
      * Initialize the audio volume.
      */
     private void initMediaPlayerVolume() {
@@ -719,8 +816,12 @@ public class CallViewActivity extends FragmentActivity {
      * @return true if the ringing sound is played
      */
     public static Boolean isRinging() {
-        if (null != mRingingPLayer) {
-            return mRingingPLayer.isPlaying();
+        if (null != mRingingPlayer) {
+            return mRingingPlayer.isPlaying();
+        }
+
+        if (null != mRingTone) {
+            return mRingTone.isPlaying();
         }
         return false;
     }
@@ -731,18 +832,44 @@ public class CallViewActivity extends FragmentActivity {
     public static void startRinging(Context context) {
         Log.d(LOG_TAG, "startRinging");
 
-        if (null == mRingingPLayer) {
-            mRingingPLayer = MediaPlayer.create(context.getApplicationContext(), R.raw.ring);
+        if (null != mRingTone) {
+            Log.d(LOG_TAG, "already ringing");
+            return;
+        }
 
-            if (null != mRingingPLayer) {
-                mRingingPLayer.setLooping(true);
-                mRingingPLayer.setVolume(1.0f, 1.0f);
+        // use the ringTone to manage sound volume properly
+        // else the ringing volume is linked to the media volume.
+        mRingTone = getRingTone(context, R.raw.ring, "ring.ogg");
+        if (null != mRingTone) {
+
+            if (null != mRingbackTone) {
+                mRingbackTone.stop();
+                mRingbackTone = null;
+            }
+
+            if (null != mCallEndTone) {
+                mCallEndTone.stop();
+                mCallEndTone = null;
+            }
+
+            MXCallsManager.setSpeakerphoneOn(context, true);
+            mRingTone.play();
+            return;
+        }
+
+
+        if (null == mRingingPlayer) {
+            mRingingPlayer = MediaPlayer.create(context.getApplicationContext(), R.raw.ring);
+
+            if (null != mRingingPlayer) {
+                mRingingPlayer.setLooping(true);
+                mRingingPlayer.setVolume(1.0f, 1.0f);
             }
         }
 
-        if (null != mRingingPLayer) {
+        if (null != mRingingPlayer) {
             // check if it is not yet playing
-            if (!mRingingPLayer.isPlaying()) {
+            if (!mRingingPlayer.isPlaying()) {
                 // stop pending
                 if ((null != mCallEndPlayer) && mCallEndPlayer.isPlaying()) {
                     mCallEndPlayer.stop();
@@ -753,7 +880,7 @@ public class CallViewActivity extends FragmentActivity {
                 }
 
                 MXCallsManager.setSpeakerphoneOn(context, true);
-                mRingingPLayer.start();
+                mRingingPlayer.start();
             }
         }
     }
@@ -763,6 +890,31 @@ public class CallViewActivity extends FragmentActivity {
      */
     public static void startRingbackSound(Context context) {
         Log.d(LOG_TAG, "startRingbackSound");
+
+        if (null != mRingTone) {
+            Log.d(LOG_TAG, "already ringing");
+            return;
+        }
+
+        // use the ringTone to manage sound volume properly
+        // else the ringing volume is linked to the media volume.
+        mRingbackTone = getRingTone(context, R.raw.ringback, "ringback.ogg");
+
+        if (null != mRingbackTone) {
+            if (null != mRingTone) {
+                mRingTone.stop();
+                mRingTone = null;
+            }
+
+            if (null != mCallEndTone) {
+                mCallEndTone.stop();
+                mCallEndTone = null;
+            }
+
+            MXCallsManager.setSpeakerphoneOn(context, true);
+            mRingbackTone.play();
+            return;
+        }
 
         if (null == mRingbackPlayer) {
             mRingbackPlayer = MediaPlayer.create(context.getApplicationContext(), R.raw.ringback);
@@ -781,8 +933,8 @@ public class CallViewActivity extends FragmentActivity {
                     mCallEndPlayer.stop();
                 }
 
-                if ((null != mRingingPLayer) && mRingingPLayer.isPlaying()) {
-                    mRingingPLayer.stop();
+                if ((null != mRingingPlayer) && mRingingPlayer.isPlaying()) {
+                    mRingingPlayer.stop();
                 }
 
                 MXCallsManager.setSpeakerphoneOn(context, true);
@@ -796,11 +948,21 @@ public class CallViewActivity extends FragmentActivity {
     public static void stopRinging() {
         Log.d(LOG_TAG, "stopRinging");
 
+        if (null != mRingTone) {
+            mRingTone.stop();
+            mRingTone = null;
+        }
+
+        if (null != mRingbackTone) {
+            mRingbackTone.stop();
+            mRingbackTone = null;
+        }
+
         // sanity checks
-        if ((null != mRingingPLayer) && mRingingPLayer.isPlaying()) {
+        if ((null != mRingingPlayer) && mRingingPlayer.isPlaying()) {
             Log.d(LOG_TAG, "stop mRingingPLayer");
             try {
-                mRingingPLayer.pause();
+                mRingingPlayer.pause();
             } catch (Exception e) {
                 Log.e(LOG_TAG, "stop mRingingPLayer failed " + e.getLocalizedMessage());
             }
@@ -821,6 +983,26 @@ public class CallViewActivity extends FragmentActivity {
      */
     public static void startEndCallSound(Context context) {
         Log.d(LOG_TAG, "startEndCallSound");
+
+        // use the ringTone to manage sound volume properly
+        // else the ringing volume is linked to the media volume.
+        mCallEndTone = getRingTone(context, R.raw.callend, "callend.ogg");
+
+        if (null != mCallEndTone) {
+            if (null != mRingTone) {
+                mRingTone.stop();
+                mRingTone = null;
+            }
+
+            if (null != mRingbackTone) {
+                mRingbackTone.stop();
+                mRingbackTone = null;
+            }
+
+            MXCallsManager.setSpeakerphoneOn(context, true);
+            mCallEndTone.play();
+            return;
+        }
 
         if (null == mCallEndPlayer) {
             mCallEndPlayer = MediaPlayer.create(context.getApplicationContext(), R.raw.callend);
