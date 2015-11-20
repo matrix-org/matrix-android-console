@@ -14,8 +14,8 @@ android {
         applicationId "org.matrix.console"
         minSdkVersion 11
         targetSdkVersion 21
-        versionCode 13
-        versionName "0.5.2-11162015"
+        versionCode 14
+        versionName "0.5.2"
     }
 
     signingConfigs {
@@ -42,8 +42,8 @@ android {
     productFlavors {
         alpha {
             applicationId "org.matrix.androidsdk.alpha"
-            versionCode 13
-            versionName "0.5.2-11162015"
+            versionCode 14
+            versionName "0.5.2"
         }
     }
 
