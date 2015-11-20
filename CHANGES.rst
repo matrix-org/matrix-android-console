@@ -1,3 +1,26 @@
+Changes to Matrix Android Console in 0.5.2 (2015-11-20)
+=======================================================
+
+Improvements:
+ * Added default aliases for rooms
+ * Better SSL support for old devices
+ * Add account is now a dialog
+ * Better recent messsage display
+ * Accessibility tweaks from Peter Vágner
+ * The call ring volume is now based on device ring volume
+
+Features:
+ * Added read receipts!
+ * Add token refresh support
+ * Support for login fallback
+
+Bugfixes:
+ * Fixed issues that led to crashes 
+ * Fixed a problem with doing push notifications without GCM
+ * Now playing the ringback tone when placing outbound calls
+ * Fixed an issue where the device kept ringing when it had been answered in another client
+ * Fixed echo in Android<->Android VOIP calls
+
 Changes in Console 0.5.1 (2015-09-30)
 ===================================================
 
