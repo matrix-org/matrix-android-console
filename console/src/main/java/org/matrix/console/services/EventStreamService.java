@@ -619,7 +619,7 @@ public class EventStreamService extends Service {
         if (!Matrix.getInstance(this).getSharedGcmRegistrationManager().useGCM()) {
             Notification notification = buildNotification();
             startForeground(NOTIFICATION_ID, notification);
-            mIsForegound = false;
+            mIsForegound = true;
         } else {
             stopForeground(true);
             mIsForegound = false;
