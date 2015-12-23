@@ -16,42 +16,23 @@
 
 package org.matrix.console.fragments;
 
-import android.app.Activity;
 import android.app.Dialog;
-import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.os.Handler;
-import android.preference.PreferenceManager;
 import android.support.v4.app.DialogFragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
 import android.widget.ListView;
 
 import org.matrix.androidsdk.MXSession;
-import org.matrix.androidsdk.data.IMXStore;
 import org.matrix.androidsdk.data.Room;
-import org.matrix.androidsdk.data.RoomState;
 import org.matrix.androidsdk.db.MXMediasCache;
-import org.matrix.androidsdk.listeners.IMXEventListener;
-import org.matrix.androidsdk.listeners.MXEventListener;
-import org.matrix.androidsdk.rest.model.Event;
-import org.matrix.androidsdk.rest.model.Receipt;
-import org.matrix.androidsdk.rest.model.RoomMember;
-import org.matrix.androidsdk.rest.model.User;
-import org.matrix.androidsdk.util.JsonUtils;
-import org.matrix.console.ConsoleApplication;
+import org.matrix.androidsdk.rest.model.ReceiptData;
 import org.matrix.console.Matrix;
 import org.matrix.console.R;
-import org.matrix.console.activity.MemberDetailsActivity;
-import org.matrix.console.adapters.ConsoleRoomMembersAdapter;
 import org.matrix.console.adapters.ReadReceiptsAdapter;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
 
 /**
  * A dialog fragment showing the read receipts
@@ -121,7 +102,7 @@ public class ReadReceiptsDialogFragment extends DialogFragment {
         final Room room = mSession.getDataHandler().getRoom(mRoomId);
         mAdapter = new ReadReceiptsAdapter(getActivity(), mSession.getHomeserverConfig(), R.layout.adapter_item_read_receipt, room, getMXMediasCache());
 
-        mAdapter.addAll(new ArrayList<Receipt>(mSession.getDataHandler().getStore().getEventReceipts(mRoomId, mEventId)));
+        mAdapter.addAll(new ArrayList<ReceiptData>(mSession.getDataHandler().getStore().getEventReceipts(mRoomId, mEventId, true, true)));
         mListView.setAdapter(mAdapter);
 
         return v;
