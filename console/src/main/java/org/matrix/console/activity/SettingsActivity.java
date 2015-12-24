@@ -455,19 +455,21 @@ public class SettingsActivity extends MXCActionBarActivity {
                         displayNameEditText.setText(myUser.displayname);
                     }
 
-                    fSession.getProfileApiClient().avatarUrl(myUser.userId, new SimpleApiCallback<String>(this) {
-                        @Override
-                        public void onSuccess(String avatarUrl) {
-                            if ((null != avatarUrl) && !avatarUrl.equals(myUser.avatarUrl)) {
-                                mTmpThumbnailUriByMatrixId.remove(fSession.getCredentials().userId);
+                    if (fSession.isActive()) {
+                        fSession.getProfileApiClient().avatarUrl(myUser.userId, new SimpleApiCallback<String>(this) {
+                            @Override
+                            public void onSuccess(String avatarUrl) {
+                                if ((null != avatarUrl) && !avatarUrl.equals(myUser.avatarUrl)) {
+                                    mTmpThumbnailUriByMatrixId.remove(fSession.getCredentials().userId);
 
-                                myUser.avatarUrl = avatarUrl;
-                                refreshProfileThumbnail(fSession, linearLayout);
+                                    myUser.avatarUrl = avatarUrl;
+                                    refreshProfileThumbnail(fSession, linearLayout);
+                                }
+
+                                refreshingView.setVisibility(View.GONE);
                             }
-
-                            refreshingView.setVisibility(View.GONE);
-                        }
-                    });
+                        });
+                    }
                 }
             });
         }
