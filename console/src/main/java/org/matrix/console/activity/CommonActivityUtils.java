@@ -136,11 +136,11 @@ public class CommonActivityUtils {
         // clear the preferences
         PreferenceManager.getDefaultSharedPreferences(activity).edit().clear().commit();
 
-        // clear credentials
-        Matrix.getInstance(activity).clearSessions(activity, true);
-
         // reset the GCM
         Matrix.getInstance(activity).getSharedGcmRegistrationManager().reset();
+
+        // clear credentials
+        Matrix.getInstance(activity).clearSessions(activity, true);
 
         // ensure that corrupted values are cleared
         Matrix.getInstance(activity).getLoginStorage().clear();
