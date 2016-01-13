@@ -64,6 +64,8 @@ public class LoginActivity extends MXCActionBarActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
+        Log.d(LOG_TAG, "onCreate");
+
         // resume the application
         if ((getIntent().getFlags() & Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT) != 0) {
             Log.e(LOG_TAG, "Resume the application");

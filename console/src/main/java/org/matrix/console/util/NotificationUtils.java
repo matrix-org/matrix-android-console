@@ -212,6 +212,8 @@ public class NotificationUtils {
             roomIntent.putExtra(RoomActivity.EXTRA_START_CALL_ID, callId);
         }
 
+        roomIntent.putExtra(RoomActivity.EXTRA_START_FROM_PUSH, "");
+
         // Recreate the back stack
         TaskStackBuilder stackBuilder = TaskStackBuilder.create(context)
                 .addParentStack(RoomActivity.class)

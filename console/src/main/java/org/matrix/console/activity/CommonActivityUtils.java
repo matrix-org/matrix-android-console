@@ -97,6 +97,15 @@ public class CommonActivityUtils {
 
     public static Boolean shouldRestartApp() {
         EventStreamService eventStreamService = EventStreamService.getInstance();
+
+        if (!Matrix.hasValidSessions()) {
+            Log.e(LOG_TAG, "shouldRestartApp: has no valid session");
+        }
+
+        if (null == eventStreamService) {
+            Log.e(LOG_TAG, "shouldRestartApp: has no event stream");
+        }
+
         return !Matrix.hasValidSessions() || (null == eventStreamService);
     }
 
