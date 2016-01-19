@@ -255,6 +255,17 @@ public class RoomActivity extends MXCActionBarActivity {
                 }
             });
         }
+
+
+        @Override
+        public void onDeleteRoom(String roomId) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    RoomActivity.this.finish();
+                }
+            });
+        }
     };
 
     public void insertInTextEditor(String text) {
