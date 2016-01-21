@@ -258,7 +258,7 @@ public class RoomActivity extends MXCActionBarActivity {
 
 
         @Override
-        public void onDeleteRoom(String roomId) {
+        public void onLeaveRoom(String roomId) {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
