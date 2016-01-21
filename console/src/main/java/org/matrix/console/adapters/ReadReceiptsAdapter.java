@@ -89,7 +89,6 @@ public class ReadReceiptsAdapter extends ArrayAdapter<ReceiptData> {
         body.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD), 0, mContext.getString(org.matrix.console.R.string.read_receipt).length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
         tsTextView.setText(body);
 
-
         ImageView imageView = (ImageView) convertView.findViewById(R.id.avatar_img);
         imageView.setTag(null);
         imageView.setImageResource(R.drawable.ic_contact_picture_holo_light);
