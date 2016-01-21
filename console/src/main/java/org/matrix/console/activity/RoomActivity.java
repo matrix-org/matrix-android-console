@@ -201,20 +201,6 @@ public class RoomActivity extends MXCActionBarActivity {
                             || Event.EVENT_TYPE_STATE_ROOM_MEMBER.equals(event.type)) {
                         setTitle(mRoom.getName(mMyUserId));
                         updateMenuEntries();
-
-                        // check if the user does not leave the room with another client
-                        if (Event.EVENT_TYPE_STATE_ROOM_MEMBER.equals(event.type) && mMyUserId.equals(event.stateKey)) {
-                            RoomMember myMember = mRoom.getMember(mMyUserId);
-
-                            if ((null != myMember) && (RoomMember.MEMBERSHIP_LEAVE.equals(myMember.membership))) {
-                                runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        RoomActivity.this.finish();
-                                    }
-                                });
-                            }
-                        }
                     }
                     else if (Event.EVENT_TYPE_STATE_ROOM_TOPIC.equals(event.type)) {
                         Log.e(LOG_TAG, "Updating room topic.");
