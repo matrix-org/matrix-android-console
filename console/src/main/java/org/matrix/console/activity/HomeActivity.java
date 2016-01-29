@@ -642,7 +642,7 @@ public class HomeActivity extends MXCActionBarActivity {
 
 
             @Override
-            public void onReceiptEvent(String roomId) {
+            public void onReceiptEvent(String roomId, List<String> senderIds) {
                 HomeActivity.this.runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
