@@ -223,11 +223,17 @@ public class Matrix {
             Log.e(LOG_TAG, "hasValidSessions : has no instance");
         }
 
-        if ((null == instance.mMXSessions) || 0 == instance.mMXSessions.size() ) {
-            Log.e(LOG_TAG, "hasValidSessions : has no session");
+        Boolean res;
+
+        synchronized (instance) {
+            if ((null == instance.mMXSessions) || (0 == instance.mMXSessions.size())) {
+                Log.e(LOG_TAG, "hasValidSessions : has no session");
+            }
+
+            res = (null != instance) && (null != instance.mMXSessions) && (instance.mMXSessions.size() > 0);
         }
 
-        return (null != instance) && (null != instance.mMXSessions) && (instance.mMXSessions.size() > 0);
+        return res;
     }
 
     /**
