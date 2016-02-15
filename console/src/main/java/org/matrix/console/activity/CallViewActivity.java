@@ -410,7 +410,6 @@ public class CallViewActivity extends FragmentActivity {
             mCall.removeListener(mListener);
         }
         ConsoleApplication.setCurrentActivity(null);
-
     }
 
     @Override
@@ -423,6 +422,17 @@ public class CallViewActivity extends FragmentActivity {
             if (null != mListener) {
                 mCall.addListener(mListener);
             }
+
+            // refresh the call view UI when resuming the
+            final String fState = mCall.getCallState();
+            CallViewActivity.this.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    Log.d(LOG_TAG, "onResume to state" + fState);
+                    manageSubViews();
+                }
+            });
+
         } else {
             this.finish();
         }
