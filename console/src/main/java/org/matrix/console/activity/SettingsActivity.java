@@ -217,21 +217,11 @@ public class SettingsActivity extends MXCActionBarActivity {
         }
 
         // Config information
-
-        String versionName = "";
-
-        try {
-            PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
-            versionName = pInfo.versionName;
-        } catch (Exception e) {
-
-        }
-
         TextView consoleVersionTextView = (TextView) findViewById(R.id.textView_matrixConsoleVersion);
-        consoleVersionTextView.setText(getString(R.string.settings_config_console_version, versionName));
+        consoleVersionTextView.setText(getString(R.string.settings_config_console_version, Matrix.getInstance(this).getVersion(false)));
 
         TextView sdkVersionTextView = (TextView) findViewById(R.id.textView_matrixSDKVersion);
-        sdkVersionTextView.setText(getString(R.string.settings_config_sdk_version, versionName));
+        sdkVersionTextView.setText(getString(R.string.settings_config_sdk_version, Matrix.getInstance(this).getDefaultSession().getVersion(false)));
 
         TextView buildNumberTextView = (TextView) findViewById(R.id.textView_matrixBuildNumber);
         buildNumberTextView.setText(getString(R.string.settings_config_build_number, ""));

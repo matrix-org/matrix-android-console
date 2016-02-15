@@ -1369,16 +1369,11 @@ public class HomeActivity extends MXCActionBarActivity {
 
         String message = "<div class=\"banner\"> <div class=\"l-page no-clear align-center\"> <h2 class=\"s-heading\">"+ getString(R.string.settings_title_config) + "</h2> </div> </div>";
 
-        String versionName = "";
-        try {
-            PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
-            versionName = pInfo.versionName;
-        } catch (Exception e) {
-
-        }
+        String versionName = Matrix.getInstance(this).getVersion(false);
+        String SDKVersion =  Matrix.getInstance(this).getDefaultSession().getVersion(false);
 
         message += "<strong>matrixConsole version</strong> <br>" + versionName;
-        message += "<p><strong>SDK version</strong> <br>" + versionName;
+        message += "<p><strong>SDK version</strong> <br>" + SDKVersion;
         message += "<div class=\"banner\"> <div class=\"l-page no-clear align-center\"> <h2 class=\"s-heading\">Third Party Library Licenses</h2> </div> </div>";
         message += "<a href=\"" + uri.toString() + "\">Licenses</a>";
 

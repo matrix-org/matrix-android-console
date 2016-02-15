@@ -28,7 +28,17 @@ android {
     }
 
     buildTypes {
+        debug {
+            resValue "string", "git_revision", "\"${gitRevision()}\""
+            resValue "string", "git_revision_unix_date", "\"${gitRevisionUnixDate()}\""
+            resValue "string", "git_revision_date", "\"${gitRevisionDate()}\""
+        }
+
         release {
+            resValue "string", "git_revision", "\"${gitRevision()}\""
+            resValue "string", "git_revision_unix_date", "\"${gitRevisionUnixDate()}\""
+            resValue "string", "git_revision_date", "\"${gitRevisionDate()}\""
+
             minifyEnabled false
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
@@ -44,7 +54,7 @@ android {
         alpha {
             applicationId "org.matrix.androidsdk.alpha"
             versionCode 15
-            versionName "0.5.3"
+            versionName "0.5.4-dev"
         }
     }
 
@@ -57,6 +67,21 @@ android {
             dir 'libs'
         }
     }
+}
+
+def gitRevision() {
+    def cmd = "git rev-parse --short HEAD"
+    return cmd.execute().text.trim()
+}
+
+def gitRevisionUnixDate() {
+    def cmd = "git show -s --format=%ct HEAD^{commit}"
+    return cmd.execute().text.trim()
+}
+
+def gitRevisionDate() {
+    def cmd = "git show -s --format=%ci HEAD^{commit}"
+    return cmd.execute().text.trim()
 }
 
 dependencies {
