@@ -47,7 +47,7 @@ import org.matrix.androidsdk.rest.model.Event;
 import org.matrix.androidsdk.rest.model.FileMessage;
 import org.matrix.androidsdk.rest.model.ImageMessage;
 import org.matrix.androidsdk.rest.model.Message;
-import org.matrix.androidsdk.rest.model.Receipt;
+import org.matrix.androidsdk.rest.model.ReceiptData;
 import org.matrix.androidsdk.rest.model.RoomMember;
 import org.matrix.androidsdk.rest.model.VideoMessage;
 import org.matrix.androidsdk.util.EventDisplay;
@@ -195,7 +195,7 @@ public class ConsoleMessageListFragment extends MatrixMessageListFragment {
                 Message.MSGTYPE_EMOTE.equals(message.msgtype)
                 ) {
 
-            if (!messageRow.getEvent().userId.equals(getSession().getCredentials().userId)) {
+            if (!messageRow.getEvent().getSender().equals(getSession().getCredentials().userId)) {
                 textIds.add(R.string.paste_username);
                 iconIds.add(R.drawable.ic_material_paste);
             }
@@ -207,7 +207,7 @@ public class ConsoleMessageListFragment extends MatrixMessageListFragment {
             // copy the message body
             if (Event.EVENT_TYPE_MESSAGE.equals(messageRow.getEvent().type)) {
 
-                if (!messageRow.getEvent().userId.equals(getSession().getCredentials().userId)) {
+                if (!messageRow.getEvent().getSender().equals(getSession().getCredentials().userId)) {
                     textIds.add(R.string.paste_username);
                     iconIds.add(R.drawable.ic_material_paste);
                 }
@@ -378,14 +378,14 @@ public class ConsoleMessageListFragment extends MatrixMessageListFragment {
                         }
                     });
                 } else if (selectedVal == R.string.paste_username) {
-                    String displayName = messageRow.getEvent().userId;
+                    String displayName = messageRow.getEvent().getSender();
                     RoomState state = messageRow.getRoomState();
 
                     if (null != state) {
                         displayName = state.getMemberName(displayName);
                     }
 
-                    onSenderNameClick(messageRow.getEvent().userId, displayName);
+                    onSenderNameClick(messageRow.getEvent().getSender(), displayName);
                 }
             }
         });
@@ -613,7 +613,7 @@ public class ConsoleMessageListFragment extends MatrixMessageListFragment {
         }
     }
 
-    public void onReadReceiptClick(String eventId, String userId, Receipt receipt) {
+    public void onReadReceiptClick(String eventId, String userId, ReceiptData receipt) {
         RoomMember member = mRoom.getMember(userId);
 
         // sanity check

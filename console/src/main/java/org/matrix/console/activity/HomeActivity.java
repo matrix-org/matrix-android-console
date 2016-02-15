@@ -642,7 +642,7 @@ public class HomeActivity extends MXCActionBarActivity {
 
 
             @Override
-            public void onReceiptEvent(String roomId) {
+            public void onReceiptEvent(String roomId, List<String> senderIds) {
                 HomeActivity.this.runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
@@ -650,6 +650,24 @@ public class HomeActivity extends MXCActionBarActivity {
                     }
                 });
 
+            }
+
+            @Override
+            public void onLeaveRoom(final String roomId) {
+                HomeActivity.this.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        List<MXSession> sessions = new ArrayList<MXSession>(Matrix.getMXSessions(HomeActivity.this));
+                        final int section = sessions.indexOf(session);
+
+                        RoomSummary summary = mAdapter.getSummaryByRoomId(section, roomId);
+                        if (null != summary) {
+                            mAdapter.removeRoomSummary(section, summary);
+                        }
+
+                        refreshOnChunkEnd = true;
+                    }
+                });
             }
 
             @Override
@@ -673,52 +691,20 @@ public class HomeActivity extends MXCActionBarActivity {
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        if ((event.roomId != null) && isDisplayableEvent(event)) {
+                        if ((event.roomId != null) && RoomSummary.isSupportedEvent(event)) {
                             List<MXSession> sessions = new ArrayList<MXSession>(Matrix.getMXSessions(HomeActivity.this));
                             final int section = sessions.indexOf(session);
                             String matrixId = session.getCredentials().userId;
 
                             mAdapter.setLatestEvent(section, event, roomState, false);
 
-                            RoomSummary summary = mAdapter.getSummaryByRoomId(section, event.roomId);
-
-                            if (summary == null) {
-                                // ROOM_CREATE events will be sent during initial sync. We want to ignore them
-                                // until the initial sync is done (that is, only refresh the list when there
-                                // are new rooms created AFTER we have synced).
-                                if (mInitialSyncComplete) {
-                                    if (Event.EVENT_TYPE_STATE_ROOM_MEMBER.equals(event.type)) {
-                                        RoomMember member = JsonUtils.toRoomMember(event.content);
-
-                                        // add the room summary if the user has
-                                        if ((RoomMember.MEMBERSHIP_INVITE.equals(member.membership) || RoomMember.MEMBERSHIP_JOIN.equals(member.membership))
-                                                && event.stateKey.equals(matrixId)) {
-                                            // we were invited to a new room.
-                                            addNewRoom(event.roomId);
-                                        }
-                                    }
-                                }
-                            }
-
-                            // If we've left the room, remove it from the list
-                            else if (mInitialSyncComplete && Event.EVENT_TYPE_STATE_ROOM_MEMBER.equals(event.type)) {
-                                if (!(session.getDataHandler().doesRoomExist(event.roomId)) || isMembershipInRoom(RoomMember.MEMBERSHIP_LEAVE, matrixId, summary)) {
-                                    mAdapter.removeRoomSummary(section, summary);
-                                }
-                            }
-                            // Watch for potential room name changes
-                            else if (Event.EVENT_TYPE_STATE_ROOM_NAME.equals(event.type)
-                                    || Event.EVENT_TYPE_STATE_ROOM_ALIASES.equals(event.type)
-                                    || Event.EVENT_TYPE_STATE_ROOM_MEMBER.equals(event.type)) {
-                                summary.setName(session.getDataHandler().getRoom(event.roomId).getName(matrixId));
-                            }
-
                             ViewedRoomTracker rTracker = ViewedRoomTracker.getInstance();
                             String viewedRoomId = rTracker.getViewedRoomId();
                             String fromMatrixId = rTracker.getMatrixId();
 
                             // If we're not currently viewing this room or not sent by myself, increment the unread count
-                            if ((!event.roomId.equals(viewedRoomId) || !matrixId.equals(fromMatrixId))  && !event.userId.equals(matrixId)) {
+                            if ((!event.roomId.equals(viewedRoomId) || !matrixId.equals(fromMatrixId))  && !event.getSender().equals(matrixId)) {
+                                RoomSummary summary = session.getDataHandler().getStore().getSummary(event.roomId);
                                 if (null != summary) {
                                     summary.setHighlighted(summary.isHighlighted() || EventUtils.shouldHighlight(session, event));
                                 }
@@ -730,26 +716,26 @@ public class HomeActivity extends MXCActionBarActivity {
                 });
             }
 
-            // White list of displayable events
-            private boolean isDisplayableEvent(Event event) {
-                return Event.EVENT_TYPE_MESSAGE.equals(event.type)
-                        || Event.EVENT_TYPE_STATE_ROOM_MEMBER.equals(event.type)
-                        || Event.EVENT_TYPE_STATE_ROOM_CREATE.equals(event.type)
-                        || Event.EVENT_TYPE_STATE_ROOM_NAME.equals(event.type)
-                        || Event.EVENT_TYPE_STATE_ROOM_ALIASES.equals(event.type)
-                        || Event.EVENT_TYPE_STATE_ROOM_TOPIC.equals(event.type);
+
+            @Override
+            public void onNewRoom(String roomId) {
+                if (mInitialSyncComplete) {
+                    RoomSummary summary = session.getDataHandler().getStore().getSummary(roomId);
+
+                    // sanity checks
+                    if (null != summary) {
+                        addSummary(summary);
+                        mAdapter.sortSummaries();
+                    }
+                }
             }
 
-            private void addNewRoom(String roomId) {
-                RoomSummary summary = session.getDataHandler().getStore().getSummary(roomId);
-
-                // sanity checks
-                if (null != summary) {
-                    addSummary(summary);
-                    mAdapter.sortSummaries();
-                } else {
-                    Log.e(LOG_TAG, "addNewRoom : null summary for room " + roomId);
-                }
+            @Override
+            public void onJoinRoom(String roomId) {
+                Log.d(LOG_TAG, "onJoinRoom");
+                // ensure that the room is displayed
+                // the server does not always warn about the roow creation
+                onNewRoom(roomId);
             }
 
             private boolean isMembershipInRoom(String membership, String selfUserId, RoomSummary summary) {

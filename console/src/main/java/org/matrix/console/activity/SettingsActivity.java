@@ -86,7 +86,7 @@ public class SettingsActivity extends MXCActionBarActivity {
     void refreshProfileThumbnail(MXSession session, LinearLayout baseLayout) {
         ImageView avatarView = (ImageView) baseLayout.findViewById(R.id.imageView_avatar);
         Uri newAvatarUri = mTmpThumbnailUriByMatrixId.get(session.getCredentials().userId);
-        String avatarUrl = session.getMyUser().avatarUrl;
+        String avatarUrl = session.getMyUser().getAvatarUrl();
 
         if (null != newAvatarUri) {
             avatarView.setImageURI(newAvatarUri);
@@ -455,19 +455,21 @@ public class SettingsActivity extends MXCActionBarActivity {
                         displayNameEditText.setText(myUser.displayname);
                     }
 
-                    fSession.getProfileApiClient().avatarUrl(myUser.userId, new SimpleApiCallback<String>(this) {
-                        @Override
-                        public void onSuccess(String avatarUrl) {
-                            if ((null != avatarUrl) && !avatarUrl.equals(myUser.avatarUrl)) {
-                                mTmpThumbnailUriByMatrixId.remove(fSession.getCredentials().userId);
+                    if (fSession.isActive()) {
+                        fSession.getProfileApiClient().avatarUrl(myUser.userId, new SimpleApiCallback<String>(this) {
+                            @Override
+                            public void onSuccess(String avatarUrl) {
+                                if ((null != avatarUrl) && !avatarUrl.equals(myUser.getAvatarUrl())) {
+                                    mTmpThumbnailUriByMatrixId.remove(fSession.getCredentials().userId);
 
-                                myUser.avatarUrl = avatarUrl;
-                                refreshProfileThumbnail(fSession, linearLayout);
+                                    myUser.setAvatarUrl(avatarUrl);
+                                    refreshProfileThumbnail(fSession, linearLayout);
+                                }
+
+                                refreshingView.setVisibility(View.GONE);
                             }
-
-                            refreshingView.setVisibility(View.GONE);
-                        }
-                    });
+                        });
+                    }
                 }
             });
         }

@@ -1,3 +1,21 @@
+Changes to Matrix Android Console in 0.5.3 (2016-02-16)
+=======================================================
+
+Improvements:
+ * Reduce the recents refresh.
+ * Some code has been moved into the matrix SDK.
+ * Some class members have been renamed (avartarUrl -> avatar_url).
+
+Features:
+ * Update after the Sync V2 support.
+
+Bugfixes:
+ * Fix a crash in MatrixMessageListFragment::onPresenceUpdate.
+ * Fix a crash while logging out.
+ * The loading spinner is not always dismissed when the user joins a invited room.
+ * fix a crash during catchup.
+ * The callview was not properly refreshed after resuming the application
+
 Changes to Matrix Android Console in 0.5.2 (2015-11-20)
 =======================================================
 

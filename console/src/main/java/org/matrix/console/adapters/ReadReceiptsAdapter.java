@@ -31,7 +31,7 @@ import org.matrix.androidsdk.HomeserverConnectionConfig;
 
 import org.matrix.androidsdk.data.Room;
 import org.matrix.androidsdk.db.MXMediasCache;
-import org.matrix.androidsdk.rest.model.Receipt;
+import org.matrix.androidsdk.rest.model.ReceiptData;
 import org.matrix.androidsdk.rest.model.RoomMember;
 import org.matrix.androidsdk.util.ContentManager;
 import org.matrix.console.R;
@@ -43,7 +43,7 @@ import java.util.Locale;
 /**
  * An adapter which can display receipts
  */
-public class ReadReceiptsAdapter extends ArrayAdapter<Receipt> {
+public class ReadReceiptsAdapter extends ArrayAdapter<ReceiptData> {
 
     protected Context mContext;
     private LayoutInflater mLayoutInflater;
@@ -72,7 +72,7 @@ public class ReadReceiptsAdapter extends ArrayAdapter<Receipt> {
 
        TextView userNameTextView = (TextView) convertView.findViewById(R.id.accountAdapter_name);
 
-        Receipt receipt = getItem(position);
+        ReceiptData receipt = getItem(position);
         RoomMember member = mRoom.getMember(receipt.userId);
 
         if (null == member) {
@@ -88,7 +88,6 @@ public class ReadReceiptsAdapter extends ArrayAdapter<Receipt> {
         SpannableStringBuilder body = new SpannableStringBuilder(mContext.getString(org.matrix.console.R.string.read_receipt) + " : " + dateFormat.format(new Date(receipt.originServerTs)));
         body.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD), 0, mContext.getString(org.matrix.console.R.string.read_receipt).length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
         tsTextView.setText(body);
-
 
         ImageView imageView = (ImageView) convertView.findViewById(R.id.avatar_img);
         imageView.setTag(null);

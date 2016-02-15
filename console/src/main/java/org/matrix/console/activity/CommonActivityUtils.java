@@ -97,6 +97,15 @@ public class CommonActivityUtils {
 
     public static Boolean shouldRestartApp() {
         EventStreamService eventStreamService = EventStreamService.getInstance();
+
+        if (!Matrix.hasValidSessions()) {
+            Log.e(LOG_TAG, "shouldRestartApp: has no valid session");
+        }
+
+        if (null == eventStreamService) {
+            Log.e(LOG_TAG, "shouldRestartApp: has no event stream");
+        }
+
         return !Matrix.hasValidSessions() || (null == eventStreamService);
     }
 
@@ -136,11 +145,11 @@ public class CommonActivityUtils {
         // clear the preferences
         PreferenceManager.getDefaultSharedPreferences(activity).edit().clear().commit();
 
-        // clear credentials
-        Matrix.getInstance(activity).clearSessions(activity, true);
-
         // reset the GCM
         Matrix.getInstance(activity).getSharedGcmRegistrationManager().reset();
+
+        // clear credentials
+        Matrix.getInstance(activity).clearSessions(activity, true);
 
         // ensure that corrupted values are cleared
         Matrix.getInstance(activity).getLoginStorage().clear();
