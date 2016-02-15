@@ -39,12 +39,17 @@ import android.view.KeyEvent;
 import android.view.View;
 import android.view.WindowManager;
 import android.webkit.WebView;
+import android.widget.Toast;
+
+import com.google.gson.JsonElement;
 
 import org.matrix.androidsdk.HomeserverConnectionConfig;
 import org.matrix.androidsdk.MXSession;
 import org.matrix.androidsdk.db.MXMediasCache;
 import org.matrix.androidsdk.fragments.IconAndTextDialogFragment;
+import org.matrix.androidsdk.rest.model.MatrixError;
 import org.matrix.androidsdk.util.ImageUtils;
+import org.matrix.androidsdk.util.JsonUtils;
 import org.matrix.androidsdk.view.PieFractionView;
 import org.matrix.console.Matrix;
 import org.matrix.console.R;
@@ -216,6 +221,15 @@ public class ImageWebViewActivity extends FragmentActivity {
                 mediasCache.addDownloadListener(downloadId, new MXMediasCache.DownloadCallback() {
                     @Override
                     public void onDownloadStart(String aDownloadId) {
+                    }
+
+                    @Override
+                    public void onError(String downloadId, JsonElement jsonElement) {
+                        final MatrixError error = JsonUtils.toMatrixError(jsonElement);
+
+                        if ((null != error) && error.isSupportedErrorCode()) {
+                            Toast.makeText(ImageWebViewActivity.this, error.getLocalizedMessage(), Toast.LENGTH_LONG).show();
+                        }
                     }
 
                     @Override

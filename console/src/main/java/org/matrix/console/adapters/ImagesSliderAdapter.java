@@ -31,17 +31,22 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.webkit.WebView;
+import android.widget.Toast;
 
 import com.google.android.gms.analytics.ExceptionReporter;
+import com.google.gson.JsonElement;
 
 import org.matrix.androidsdk.HomeserverConnectionConfig;
+import org.matrix.androidsdk.rest.model.MatrixError;
 import org.matrix.androidsdk.util.ImageUtils;
+import org.matrix.androidsdk.util.JsonUtils;
 import org.matrix.androidsdk.view.PieFractionView;
 import org.matrix.console.Matrix;
 import org.matrix.console.R;
 
 import org.matrix.androidsdk.db.MXMediasCache;
 import org.matrix.console.activity.CommonActivityUtils;
+import org.matrix.console.activity.ImageSliderActivity;
 import org.matrix.console.util.SlidableImageInfo;
 
 import java.io.File;
@@ -115,6 +120,16 @@ public class ImagesSliderAdapter extends PagerAdapter {
                 @Override
                 public void onDownloadStart(String aDownloadId) {
                 }
+
+                @Override
+                public void onError(String downloadId, JsonElement jsonElement) {
+                    final MatrixError error = JsonUtils.toMatrixError(jsonElement);
+
+                    if ((null != error) && error.isSupportedErrorCode()) {
+                        Toast.makeText(ImagesSliderAdapter.this.context, error.getLocalizedMessage(), Toast.LENGTH_LONG).show();
+                    }
+                }
+
                 @Override
                 public void onDownloadProgress(String aDownloadId, int percentageProgress) {
                     if (aDownloadId.equals(downloadId)) {
