@@ -180,6 +180,17 @@ public class EventStreamService extends Service {
         }
 
         @Override
+        public void onReceiptEvent(String roomId, List<String> senderIds) {
+            Log.i(LOG_TAG, String.format("Room Id \"%s\" has been read by %s", roomId, senderIds));
+            for (String sender : senderIds) {
+                if (mMatrixIds.contains(sender)) {
+                    cancelNotifications(roomId);
+                    return;
+                }
+            }
+        }
+
+        @Override
         public void onBingEvent(Event event, RoomState roomState, BingRule bingRule) {
             Log.i(LOG_TAG, "onMessageEvent >>>> " + event);
 
