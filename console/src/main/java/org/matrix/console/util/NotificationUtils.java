@@ -277,10 +277,6 @@ public class NotificationUtils {
             n.defaults |= Notification.DEFAULT_SOUND;
         }
 
-        // some devices crash if this field is not set
-        // even if it is deprecated
-        n.setLatestEventInfo(context, from, body, pendingIntent);
-
         return n;
     }
 
