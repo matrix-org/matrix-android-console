@@ -26,6 +26,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.IBinder;
 import android.os.PowerManager;
+import android.support.v7.app.NotificationCompat;
 import android.text.TextUtils;
 import android.util.Log;
 import android.widget.Toast;
@@ -627,12 +628,6 @@ public class EventStreamService extends Service {
     }
 
     private Notification buildNotification() {
-        Notification notification = new Notification(
-                (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.LOLLIPOP) ? R.drawable.ic_menu_small_matrix : R.drawable.ic_menu_small_matrix_transparent,
-                "Matrix",
-                System.currentTimeMillis()
-        );
-
         // go to the home screen if this is clicked.
         Intent i = new Intent(this, HomeActivity.class);
 
@@ -640,12 +635,19 @@ public class EventStreamService extends Service {
                 Intent.FLAG_ACTIVITY_SINGLE_TOP);
 
         PendingIntent pi = PendingIntent.getActivity(this, 0, i, 0);
+        int icon = (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.LOLLIPOP)
+                ? R.drawable.ic_menu_small_matrix
+                : R.drawable.ic_menu_small_matrix_transparent;
 
-        notification.setLatestEventInfo(this, getString(R.string.app_name),
-                "Listening for events",
-                pi);
-        notification.flags |= Notification.FLAG_NO_CLEAR;
-        return notification;
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this);
+        return builder.setContentIntent(pi)
+                .setSmallIcon(icon)
+                .setWhen(System.currentTimeMillis())
+                .setAutoCancel(false)
+                .setContentTitle("Matrix")
+                .setContentText("Listening for events")
+                .setOngoing(true)
+                .build();
     }
 
 
