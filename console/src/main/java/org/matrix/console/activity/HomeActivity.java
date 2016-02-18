@@ -676,6 +676,12 @@ public class HomeActivity extends MXCActionBarActivity {
                     @Override
                     public void run() {
                         Log.d(LOG_TAG, "onLiveEventsChunkProcessed");
+
+                        // clear the notification if they are not anymore valid
+                        // i.e the event has been read from another client
+                        // or deleted
+                        EventStreamService.checkDisplayedNotification();
+
                         if (!mIsPaused && refreshOnChunkEnd) {
                             mAdapter.sortSummaries();
                             mAdapter.notifyDataSetChanged();

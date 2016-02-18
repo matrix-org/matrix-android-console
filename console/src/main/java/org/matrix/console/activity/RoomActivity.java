@@ -852,7 +852,7 @@ public class RoomActivity extends MXCActionBarActivity {
 
         ViewedRoomTracker.getInstance().setViewedRoomId(mRoom.getRoomId());
         ViewedRoomTracker.getInstance().setMatrixId(mSession.getCredentials().userId);
-        EventStreamService.cancelNotificationsForRoomId(mRoom.getRoomId());
+        EventStreamService.cancelNotificationsForRoomId(mSession.getCredentials().userId, mRoom.getRoomId());
 
         // reset the unread messages counter
         mRoom.sendReadReceipt();
