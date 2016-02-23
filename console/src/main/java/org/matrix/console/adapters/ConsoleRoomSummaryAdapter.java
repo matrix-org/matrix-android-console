@@ -105,7 +105,7 @@ public class ConsoleRoomSummaryAdapter extends RoomSummaryAdapter {
             return mContext.getResources().getString(R.string.my_rooms);
         } else {
             if (mSessions.get(section).isActive()) {
-                return mSessions.get(section).getMyUser().userId;
+                return mSessions.get(section).getMyUserId();
             } else {
                 return mContext.getResources().getString(R.string.my_rooms);
             }
