@@ -33,8 +33,11 @@ import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.Toast;
+
+import com.google.gson.JsonElement;
 
 import org.matrix.androidsdk.MXSession;
 import org.matrix.androidsdk.adapters.MessageRow;
@@ -46,6 +49,7 @@ import org.matrix.androidsdk.fragments.MatrixMessageListFragment;
 import org.matrix.androidsdk.rest.model.Event;
 import org.matrix.androidsdk.rest.model.FileMessage;
 import org.matrix.androidsdk.rest.model.ImageMessage;
+import org.matrix.androidsdk.rest.model.MatrixError;
 import org.matrix.androidsdk.rest.model.Message;
 import org.matrix.androidsdk.rest.model.ReceiptData;
 import org.matrix.androidsdk.rest.model.RoomMember;
@@ -487,17 +491,46 @@ public class ConsoleMessageListFragment extends MatrixMessageListFragment {
                 }
             }
         } else if (Message.MSGTYPE_VIDEO.equals(message.msgtype)) {
-            VideoMessage videoMessage = JsonUtils.toVideoMessage(event.content);
+           final VideoMessage videoMessage = JsonUtils.toVideoMessage(event.content);
 
             if (null != videoMessage.url) {
-                File mediaFile =   mSession.getMediasCache().mediaCacheFile(videoMessage.url, videoMessage.getVideoMimeType());
+                File mediaFile =  mSession.getMediasCache().mediaCacheFile(videoMessage.url, videoMessage.getVideoMimeType());
 
                 // is the file already saved
                 if (null != mediaFile) {
                     String savedMediaPath = CommonActivityUtils.saveMediaIntoDownloads(getActivity(), mediaFile, videoMessage.body, videoMessage.getVideoMimeType());
                     CommonActivityUtils.openMedia(getActivity(), savedMediaPath, videoMessage.getVideoMimeType());
                 } else {
-                    mSession.getMediasCache().downloadMedia(getActivity(), mSession.getHomeserverConfig(), videoMessage.url, videoMessage.getVideoMimeType());
+                    final String expectedDownloadId = mSession.getMediasCache().downloadMedia(getActivity(), mSession.getHomeserverConfig(), videoMessage.url, videoMessage.getVideoMimeType());
+
+                    mSession.getMediasCache().addDownloadListener(expectedDownloadId, new MXMediasCache.DownloadCallback() {
+                        @Override
+                        public void onDownloadStart(String downloadId) {
+                        }
+
+                        @Override
+                        public void onError(String downloadId, JsonElement jsonElement) {
+                        }
+
+                        @Override
+                        public void onDownloadProgress(String aDownloadId, int percentageProgress) {
+                        }
+
+                        @Override
+                        public void onDownloadComplete(String aDownloadId) {
+                            if (TextUtils.equals(aDownloadId, expectedDownloadId)) {
+                                File mediaFile =  mSession.getMediasCache().mediaCacheFile(videoMessage.url, videoMessage.getVideoMimeType());
+
+                                // is the file already saved
+                                if (null != mediaFile) {
+                                    String savedMediaPath = CommonActivityUtils.saveMediaIntoDownloads(getActivity(), mediaFile, videoMessage.body, videoMessage.getVideoMimeType());
+                                    CommonActivityUtils.openMedia(getActivity(), savedMediaPath, videoMessage.getVideoMimeType());
+                                }
+
+                            }
+                        }
+                    });
+
                     mAdapter.notifyDataSetChanged();
                 }
             }
