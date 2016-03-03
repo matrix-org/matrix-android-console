@@ -588,13 +588,13 @@ public class RoomActivity extends MXCActionBarActivity {
                                                             }
 
                                                             resizeBitmapStream.close();
-
-                                                            // try to apply exif rotation
-                                                            if (0 != rotationAngle) {
-                                                                // rotate the image content
-                                                                ImageUtils.rotateImage(RoomActivity.this, mPendingMediaUrl, rotationAngle, mMediasCache);
-                                                            }
                                                         }
+                                                    }
+
+                                                    // try to apply exif rotation
+                                                    if (0 != rotationAngle) {
+                                                        // rotate the image content
+                                                        ImageUtils.rotateImage(RoomActivity.this, mPendingMediaUrl, rotationAngle, mMediasCache);
                                                     }
                                                 } catch (Exception e) {
                                                     Log.e(LOG_TAG, "Onclick " + e.getMessage());
