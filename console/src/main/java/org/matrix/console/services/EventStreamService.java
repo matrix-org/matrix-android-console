@@ -414,15 +414,6 @@ public class EventStreamService extends Service {
                 }
             }
         }
-
-
-        @Override
-        public void onResendingEvent(Event event) {
-        }
-
-        @Override
-        public void onResentEvent(Event event) {
-        }
     };
 
     /**

@@ -403,7 +403,7 @@ public class ConsoleMessageListFragment extends MatrixMessageListFragment {
         }
     }
 
-    public Boolean onRowLongClick(int position) {
+    public boolean onRowLongClick(int position) {
         return false;
     }
 
@@ -539,7 +539,7 @@ public class ConsoleMessageListFragment extends MatrixMessageListFragment {
         }
     }
 
-    public Boolean onContentLongClick(int position) {
+    public boolean onContentLongClick(int position) {
         return false;
     }
 
@@ -551,7 +551,7 @@ public class ConsoleMessageListFragment extends MatrixMessageListFragment {
         getActivity().startActivity(startRoomInfoIntent);
     }
 
-    public Boolean onAvatarLongClick(String userId) {
+    public boolean onAvatarLongClick(String userId) {
         return false;
     }
 
