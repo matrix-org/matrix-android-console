@@ -737,6 +737,30 @@ public class HomeActivity extends MXCActionBarActivity {
             }
 
             @Override
+            public void onRoomSyncWithLimitedTimeline(String roomId) {
+                if (mInitialSyncComplete) {
+                    List<MXSession> sessions = new ArrayList<MXSession>(Matrix.getMXSessions(HomeActivity.this));
+                    final int section = sessions.indexOf(session);
+
+                    RoomSummary summary = mAdapter.getSummaryByRoomId(section, roomId);
+                    if (null != summary) {
+                        mAdapter.removeRoomSummary(section, summary);
+                    }
+
+                    summary = session.getDataHandler().getStore().getSummary(roomId);
+
+                    // sanity checks
+                    if (null != summary) {
+                        addSummary(summary);
+                        mAdapter.sortSummaries();
+                    }
+
+                    refreshOnChunkEnd = true;
+                }
+            }
+
+
+            @Override
             public void onJoinRoom(String roomId) {
                 Log.d(LOG_TAG, "onJoinRoom");
                 // ensure that the room is displayed
