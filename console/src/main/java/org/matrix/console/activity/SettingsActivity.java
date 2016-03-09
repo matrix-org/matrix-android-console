@@ -21,13 +21,10 @@ import android.content.ContentResolver;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.pm.ApplicationInfo;
-import android.content.pm.PackageInfo;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.preference.PreferenceManager;
 import android.provider.MediaStore;
 import android.support.v4.app.FragmentManager;
@@ -61,16 +58,22 @@ import org.matrix.console.gcm.GcmRegistrationManager;
 import org.matrix.console.util.ResourceUtils;
 import org.matrix.console.util.UIUtils;
 
+import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
+import java.text.SimpleDateFormat;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 
 public class SettingsActivity extends MXCActionBarActivity {
 
     private static final String LOG_TAG = "SettingsActivity";
 
     private static final int REQUEST_IMAGE = 0;
+    private String photoPath;
 
     // stored the updated thumbnails URI by session
     private static HashMap<String, Uri> mTmpThumbnailUriByMatrixId = new HashMap<String, Uri>();
@@ -178,9 +181,8 @@ public class SettingsActivity extends MXCActionBarActivity {
                 @Override
                 public void onClick(View v) {
                     mUpdatingSessionId = fSession.getCredentials().userId;
-                    Intent fileIntent = new Intent(Intent.ACTION_PICK);
-                    fileIntent.setType("image/*");
-                    startActivityForResult(fileIntent, REQUEST_IMAGE);
+                    Intent intent = createPictureChooserIntent();
+                    startActivityForResult(intent, REQUEST_IMAGE);
                 }
             });
 
@@ -473,7 +475,6 @@ public class SettingsActivity extends MXCActionBarActivity {
 
     @Override
     protected void onActivityResult(final int requestCode, final int resultCode, final Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == REQUEST_IMAGE) {
             if (resultCode == RESULT_OK) {
 
@@ -485,10 +486,14 @@ public class SettingsActivity extends MXCActionBarActivity {
                         // sanity checks
                         if (null != linearLayout) {
                             ImageView avatarView = (ImageView) linearLayout.findViewById(R.id.imageView_avatar);
-
-                            Uri imageUri = data.getData();
+                            Uri imageUri, scaledImageUri;
                             Bitmap thumbnailBitmap = null;
-                            Uri scaledImageUri = data.getData();
+
+                            if(data.getData() == null){
+                                imageUri = scaledImageUri = Uri.fromFile(new File(photoPath));
+                            }else{
+                                imageUri = scaledImageUri = data.getData();
+                            }
 
                             try {
                                 ResourceUtils.Resource resource = ResourceUtils.openResource(SettingsActivity.this, imageUri);
@@ -537,10 +542,15 @@ public class SettingsActivity extends MXCActionBarActivity {
                         }
                     }
                 });
+            }else if(resultCode == RESULT_CANCELED){
+                File photoFile = new File(photoPath);
+                if (photoFile.exists())
+                    new File(photoPath).delete();
             }
 
             mUpdatingSessionId = null;
         }
+        super.onActivityResult(requestCode, resultCode, data);
     }
 
     @Override
@@ -688,5 +698,42 @@ public class SettingsActivity extends MXCActionBarActivity {
         }
 
         return res;
+    }
+
+    private Intent createPictureChooserIntent(){
+        Intent galleryIntent = new Intent(Intent.ACTION_PICK, android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+        Intent cameraIntent = new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
+        File photoFile = null;
+        try {
+            photoFile = createImageFile();
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+        if (photoFile != null) {
+            cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT,
+                    Uri.fromFile(photoFile));
+        }
+
+        Intent chooser = new Intent(Intent.ACTION_CHOOSER);
+        chooser.putExtra(Intent.EXTRA_INTENT, galleryIntent);
+        chooser.putExtra(Intent.EXTRA_TITLE, "Choose Avatar Picture");
+
+        Intent[] intentArray = {cameraIntent};
+        chooser.putExtra(Intent.EXTRA_INITIAL_INTENTS, intentArray);
+        return chooser;
+    }
+
+    private File createImageFile() throws IOException {
+        String timeStamp = new SimpleDateFormat("MMdd_HHmmss", Locale.US).format(new Date());
+        String imageFileName = "JPEG_" + timeStamp + "_";
+        File storageDir = Environment.getExternalStoragePublicDirectory(
+                Environment.DIRECTORY_PICTURES);
+        File image = File.createTempFile(
+                imageFileName,  /* prefix */
+                ".jpg",         /* suffix */
+                storageDir      /* directory */
+        );
+        photoPath = image.getAbsolutePath();
+        return image;
     }
 }
