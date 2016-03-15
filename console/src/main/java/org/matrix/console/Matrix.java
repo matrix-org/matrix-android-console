@@ -21,6 +21,7 @@ import org.matrix.console.gcm.GcmRegistrationManager;
 import org.matrix.console.store.LoginStorage;
 import org.matrix.console.util.RageShake;
 
+import java.io.Console;
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -345,7 +346,14 @@ public class Matrix {
             store = new MXMemoryStore(hsConfig.getCredentials());
         }
 
-        return new MXSession(hsConfig, new MXDataHandler(store, credentials), mAppContext);
+        return new MXSession(hsConfig, new MXDataHandler(store, credentials, new MXDataHandler.InvalidTokenListener() {
+            @Override
+            public void onTokenCorrupted() {
+                if (null != ConsoleApplication.getCurrentActivity()) {
+                    CommonActivityUtils.logout(ConsoleApplication.getCurrentActivity());
+                }
+            }
+        }), mAppContext);
     }
 
     /**
