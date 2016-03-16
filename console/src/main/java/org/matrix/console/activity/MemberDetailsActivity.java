@@ -108,19 +108,6 @@ public class MemberDetailsActivity extends MXCActionBarActivity {
                 });
             }
         }
-
-        /**
-         * User presences was synchronized..
-         */
-        @Override
-        public void onPresencesSyncComplete() {
-            MemberDetailsActivity.this.runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    updatePresenceInfo();
-                }
-            });
-        }
     };
 
     @Override
