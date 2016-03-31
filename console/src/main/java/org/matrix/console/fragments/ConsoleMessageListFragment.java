@@ -16,6 +16,7 @@
 
 package org.matrix.console.fragments;
 
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.ClipData;
 import android.content.ClipboardManager;
@@ -31,6 +32,7 @@ import android.preference.PreferenceManager;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -90,6 +92,8 @@ public class ConsoleMessageListFragment extends MatrixMessageListFragment {
         return f;
     }
 
+    protected View mBackProgressView;
+
     @Override
     public MXSession getSession(String matrixId) {
         return Matrix.getMXSession(getActivity(), matrixId);
@@ -130,56 +134,55 @@ public class ConsoleMessageListFragment extends MatrixMessageListFragment {
         return preferences.getBoolean(getString(R.string.settings_key_display_all_events), false);
     }
 
-    /**
-     * Display a global spinner or any UI item to warn the user that there are some pending actions.
-     */
-    @Override
-    public void displayLoadingProgress() {
-        if (null != getActivity()) {
-            getActivity().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    if (null != getActivity()) {
-                        final View progressView = getActivity().findViewById(R.id.loading_room_content_progress);
 
-                        if (null != progressView) {
-                            progressView.setVisibility(View.VISIBLE);
-                        }
-                    }
-                }
-            });
+    private void setViewVisibility(View view, int visibility) {
+        if ((null != view) && (null != getActivity())) {
+            view.setVisibility(visibility);
         }
     }
 
-    /**
-     * Dismiss any global spinner.
-     */
     @Override
-    public void dismissLoadingProgress() {
-        if (null != getActivity()) {
-            getActivity().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    if (null != getActivity()) {
-                        final View progressView = getActivity().findViewById(R.id.loading_room_content_progress);
-
-                        if (null != progressView) {
-                            progressView.setVisibility(View.GONE);
-                        }
-                    }
-                }
-            });
-        }
+    public void showLoadingBackProgress() {
+        setViewVisibility(mBackProgressView, View.VISIBLE);
     }
 
-    /**
-     * logout from the application
-     */
     @Override
-    public void logout() {
-        CommonActivityUtils.logout(ConsoleMessageListFragment.this.getActivity());
+    public void hideLoadingBackProgress() {
+        setViewVisibility(mBackProgressView, View.GONE);
     }
 
+    @Override
+    public void showLoadingForwardProgress() {
+        setViewVisibility(mBackProgressView, View.VISIBLE);
+    }
+
+    @Override
+    public void hideLoadingForwardProgress() {
+        setViewVisibility(mBackProgressView, View.GONE);
+    }
+
+    @Override
+    public void showInitLoading() {
+        setViewVisibility(mBackProgressView, View.VISIBLE);
+    }
+
+    @Override
+    public void hideInitLoading() {
+        setViewVisibility(mBackProgressView, View.GONE);
+    }
+
+
+    /**
+     * Called when a fragment is first attached to its activity.
+     * {@link #onCreate(Bundle)} will be called after this.
+     *
+     * @param aHostActivity parent activity
+     */
+    @Override
+    public void onAttach(Activity aHostActivity) {
+        super.onAttach(aHostActivity);
+        mBackProgressView = aHostActivity.findViewById(R.id.loading_room_content_progress);
+    }
 
     /***  MessageAdapter listener  ***/
     @Override
