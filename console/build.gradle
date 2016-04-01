@@ -100,6 +100,8 @@ dependencies {
     compile 'com.squareup.okhttp:okhttp-urlconnection:2.0.0'
     compile 'com.squareup.okhttp:okhttp:2.0.0'
     compile 'io.pristine:libjingle:9690@aar'
+    compile 'org.sufficientlysecure:html-textview:1.4'
+
     compile(name: 'matrix-sdk', ext: 'aar')
 }
 
