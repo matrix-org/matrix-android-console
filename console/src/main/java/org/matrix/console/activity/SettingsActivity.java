@@ -108,7 +108,7 @@ public class SettingsActivity extends MXCActionBarActivity {
         size += mMediasCache.cacheSize();
 
         for(MXSession session : Matrix.getMXSessions(SettingsActivity.this)) {
-            if (session.isActive()) {
+            if (session.isAlive()) {
                 size += session.getDataHandler().getStore().diskUsage();
             }
         }
@@ -120,7 +120,7 @@ public class SettingsActivity extends MXCActionBarActivity {
         // one session
         if (Matrix.getMXSessions(this).size() == 1) {
             Intent intent = new Intent(SettingsActivity.this, NotificationSettingsActivity.class);
-            intent.putExtra(NotificationSettingsActivity.EXTRA_MATRIX_ID, Matrix.getInstance(this).getDefaultSession().getMyUser().userId);
+            intent.putExtra(NotificationSettingsActivity.EXTRA_MATRIX_ID, Matrix.getInstance(this).getDefaultSession().getMyUserId());
             SettingsActivity.this.startActivity(intent);
         } else {
             // select the current session
@@ -136,7 +136,7 @@ public class SettingsActivity extends MXCActionBarActivity {
                 @Override
                 public void onSelected(final MXSession session) {
                     Intent intent = new Intent(SettingsActivity.this, NotificationSettingsActivity.class);
-                    intent.putExtra(NotificationSettingsActivity.EXTRA_MATRIX_ID, session.getMyUser().userId);
+                    intent.putExtra(NotificationSettingsActivity.EXTRA_MATRIX_ID, session.getMyUserId());
                     SettingsActivity.this.startActivity(intent);
                 }
             });
@@ -187,7 +187,7 @@ public class SettingsActivity extends MXCActionBarActivity {
             MyUser myUser = session.getMyUser();
 
             TextView matrixIdTextView = (TextView) profileLayout.findViewById(R.id.textView_matrix_id);
-            matrixIdTextView.setText(myUser.userId);
+            matrixIdTextView.setText(myUser.user_id);
 
             final Button saveButton = (Button) profileLayout.findViewById(R.id.button_save);
 
@@ -217,21 +217,11 @@ public class SettingsActivity extends MXCActionBarActivity {
         }
 
         // Config information
-
-        String versionName = "";
-
-        try {
-            PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
-            versionName = pInfo.versionName;
-        } catch (Exception e) {
-
-        }
-
         TextView consoleVersionTextView = (TextView) findViewById(R.id.textView_matrixConsoleVersion);
-        consoleVersionTextView.setText(getString(R.string.settings_config_console_version, versionName));
+        consoleVersionTextView.setText(getString(R.string.settings_config_console_version, Matrix.getInstance(this).getVersion(false)));
 
         TextView sdkVersionTextView = (TextView) findViewById(R.id.textView_matrixSDKVersion);
-        sdkVersionTextView.setText(getString(R.string.settings_config_sdk_version, versionName));
+        sdkVersionTextView.setText(getString(R.string.settings_config_sdk_version, Matrix.getInstance(this).getDefaultSession().getVersion(false)));
 
         TextView buildNumberTextView = (TextView) findViewById(R.id.textView_matrixBuildNumber);
         buildNumberTextView.setText(getString(R.string.settings_config_build_number, ""));
@@ -256,7 +246,7 @@ public class SettingsActivity extends MXCActionBarActivity {
             );
             config += "\n";
 
-            config += String.format(getString(R.string.settings_config_user_id), session.getMyUser().userId);
+            config += String.format(getString(R.string.settings_config_user_id), session.getMyUserId());
 
             if (sessions.size() > 1) {
                 config += "\n";
@@ -445,7 +435,7 @@ public class SettingsActivity extends MXCActionBarActivity {
             final View refreshingView = linearLayout.findViewById(R.id.profile_mask);
             refreshingView.setVisibility(View.VISIBLE);
 
-            session.getProfileApiClient().displayname(myUser.userId, new SimpleApiCallback<String>(this) {
+            session.getProfileApiClient().displayname(myUser.user_id, new SimpleApiCallback<String>(this) {
                 @Override
                 public void onSuccess(String displayname) {
 
@@ -455,8 +445,8 @@ public class SettingsActivity extends MXCActionBarActivity {
                         displayNameEditText.setText(myUser.displayname);
                     }
 
-                    if (fSession.isActive()) {
-                        fSession.getProfileApiClient().avatarUrl(myUser.userId, new SimpleApiCallback<String>(this) {
+                    if (fSession.isAlive()) {
+                        fSession.getProfileApiClient().avatarUrl(myUser.user_id, new SimpleApiCallback<String>(this) {
                             @Override
                             public void onSuccess(String avatarUrl) {
                                 if ((null != avatarUrl) && !avatarUrl.equals(myUser.getAvatarUrl())) {

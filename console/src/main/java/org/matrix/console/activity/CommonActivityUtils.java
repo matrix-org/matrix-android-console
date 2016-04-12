@@ -76,11 +76,11 @@ public class CommonActivityUtils {
     private static final String LOG_TAG = "CommonActivityUtils";
 
     public static void logout(Activity activity, MXSession session, Boolean clearCredentials) {
-        if (session.isActive()) {
+        if (session.isAlive()) {
             // stop the service
             EventStreamService eventStreamService = EventStreamService.getInstance();
             ArrayList<String> matrixIds = new ArrayList<String>();
-            matrixIds.add(session.getMyUser().userId);
+            matrixIds.add(session.getMyUserId());
             eventStreamService.stopAccounts(matrixIds);
 
             // Publish to the server that we're now offline
@@ -299,7 +299,7 @@ public class CommonActivityUtils {
         MXSession session = (aSession == null) ? Matrix.getMXSession(fromActivity, null) : aSession;
 
         // sanity check
-        if ((null == session) || !session.isActive()) {
+        if ((null == session) || !session.isAlive()) {
             return;
         }
 
@@ -363,7 +363,7 @@ public class CommonActivityUtils {
         }
 
         // sanity check
-        if ((null == session) || !session.isActive()) {
+        if ((null == session) || !session.isAlive()) {
             return;
         }
 
@@ -524,7 +524,7 @@ public class CommonActivityUtils {
      */
     public static void sendFilesTo(final Activity fromActivity, final Intent intent, final MXSession session) {
         // sanity check
-        if ((null == session) || !session.isActive()) {
+        if ((null == session) || !session.isAlive()) {
             return;
         }
 

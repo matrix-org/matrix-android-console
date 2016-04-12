@@ -17,6 +17,8 @@
 package org.matrix.console.activity;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.http.SslError;
 import android.os.Bundle;
@@ -33,6 +35,7 @@ import org.matrix.console.R;
 
 import java.net.URLDecoder;
 import java.util.HashMap;
+import java.util.logging.Handler;
 
 public class AccountCreationActivity extends Activity {
     public static String EXTRA_HOME_SERVER_ID = "org.matrix.console.activity.EXTRA_HOME_SERVER_ID";
@@ -78,9 +81,41 @@ public class AccountCreationActivity extends Activity {
 
         mWebView.setWebViewClient(new WebViewClient(){
             @Override
-            public void onReceivedSslError(WebView view, SslErrorHandler handler,
-                                           SslError error) {
-                handler.proceed();
+            public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
+                final SslErrorHandler fHander = handler;
+
+                AlertDialog.Builder builder = new AlertDialog.Builder(AccountCreationActivity.this);
+
+                builder.setMessage(R.string.ssl_could_not_verify);
+
+                builder.setPositiveButton(R.string.ssl_trust, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        fHander.proceed();
+                    }
+                });
+
+                builder.setNegativeButton(R.string.ssl_do_not_trust, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        fHander.cancel();
+                    }
+                });
+
+                builder.setOnKeyListener(new DialogInterface.OnKeyListener() {
+                    @Override
+                    public boolean onKey(DialogInterface dialog, int keyCode, KeyEvent event) {
+                        if (event.getAction() == KeyEvent.ACTION_UP && keyCode == KeyEvent.KEYCODE_BACK) {
+                            fHander.cancel();
+                            dialog.dismiss();
+                            return true;
+                        }
+                        return false;
+                    }
+                });
+
+                AlertDialog dialog = builder.create();
+                dialog.show();
             }
             
             @Override

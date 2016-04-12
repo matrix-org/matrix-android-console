@@ -81,7 +81,10 @@ public class EventStreamService extends Service {
     private ArrayList<String> mMatrixIds;
     private StreamAction mState = StreamAction.UNKNOWN;
 
+    // store the notifications description
+    private String mNotificationSessionId = null;
     private String mNotificationRoomId = null;
+    private String mNotificationEventId = null;
 
     // call in progress
     // foreground notification
@@ -108,24 +111,62 @@ public class EventStreamService extends Service {
      * If the roomId is null, cancel all the push notification.
      * @param roomId
      */
-    public static void cancelNotificationsForRoomId(String roomId) {
+    public static void cancelNotificationsForRoomId(String accountId, String roomId) {
         if (null != mActiveEventStreamService) {
-            mActiveEventStreamService.cancelNotifications(roomId);
+            mActiveEventStreamService.cancelNotifications(accountId ,roomId);
         }
     }
 
-    private void cancelNotifications(String roomId) {
-        boolean cancelNotifications = true;
+    private void clearNotification() {
+        NotificationManager nm = (NotificationManager) EventStreamService.this.getSystemService(Context.NOTIFICATION_SERVICE);
+        nm.cancelAll();
 
-        // clear only if the notification has been pushed for a dedicated RoomId
-        if (null != roomId) {
-            cancelNotifications = (null != mNotificationRoomId) && (mNotificationRoomId.equals(roomId));
+        // reset the identifiers
+        mNotificationSessionId = null;
+        mNotificationRoomId = null;
+        mNotificationEventId = null;
+    }
+
+    private void cancelNotifications(String accountId, String roomId) {
+        // sanity checks
+        if ((null != accountId) && (null != roomId)) {
+            // cancel the notifications
+            if (TextUtils.equals(mNotificationRoomId, roomId) && TextUtils.equals(accountId, mNotificationSessionId)) {
+                clearNotification();
+            }
         }
+    }
 
-        // cancel the notifications
-        if (cancelNotifications) {
-            NotificationManager nm = (NotificationManager) EventStreamService.this.getSystemService(Context.NOTIFICATION_SERVICE);
-            nm.cancelAll();
+    /**
+     * Check if a notification must be cleared because the linked event has been read, deleted ...
+     */
+    public static void checkDisplayedNotification() {
+        if (null != mActiveEventStreamService) {
+            mActiveEventStreamService.checkNotification();
+        }
+    }
+
+    private void checkNotification() {
+        if (null != mNotificationRoomId) {
+            boolean clearNotification = true;
+            MXSession session = Matrix.getInstance(this).getSession(mNotificationSessionId);
+
+            if (null != session) {
+                Room room = session.getDataHandler().getRoom(mNotificationRoomId);
+
+                if (null != room) {
+                    // invitation notification
+                    if (null == mNotificationEventId) {
+                        clearNotification = !room.isInvited();
+                    } else {
+                        clearNotification = room.isEventRead(mNotificationEventId);
+                    }
+                }
+            }
+
+            if (clearNotification) {
+                clearNotification();
+            }
         }
     }
 
@@ -215,7 +256,7 @@ public class EventStreamService extends Service {
             // should never happen.
             // But it could be triggered because of multi accounts management.
             // The dedicated account is removing but some pushes are still received.
-            if ((null == session) || !session.isActive()) {
+            if ((null == session) || !session.isAlive()) {
                 return;
             }
 
@@ -305,10 +346,12 @@ public class EventStreamService extends Service {
 
             String roomName = null;
             if(session.getMyUser() != null) {
-                roomName = room.getName(session.getMyUser().userId);
+                roomName = room.getName(session.getMyUserId());
             }
 
+            mNotificationSessionId = session.getCredentials().userId;
             mNotificationRoomId = roomId;
+            mNotificationEventId = event.eventId;
 
             if (bingRule.isCallRingNotificationSound(bingRule.notificationSound())) {
                 if (null == CallViewActivity.getActiveCall()) {
@@ -370,15 +413,6 @@ public class EventStreamService extends Service {
                     catchup();
                 }
             }
-        }
-
-
-        @Override
-        public void onResendingEvent(Event event) {
-        }
-
-        @Override
-        public void onResentEvent(Event event) {
         }
     };
 
@@ -539,7 +573,7 @@ public class EventStreamService extends Service {
 
         if (mSessions != null) {
             for(MXSession session : mSessions) {
-                if (session.isActive()) {
+                if (session.isAlive()) {
                     session.stopEventStream();
                     session.getDataHandler().removeListener(mListener);
                 }

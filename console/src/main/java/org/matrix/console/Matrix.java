@@ -3,6 +3,7 @@ package org.matrix.console;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageInfo;
 import android.util.Log;
 
 import org.matrix.androidsdk.HomeserverConnectionConfig;
@@ -20,6 +21,7 @@ import org.matrix.console.gcm.GcmRegistrationManager;
 import org.matrix.console.store.LoginStorage;
 import org.matrix.console.util.RageShake;
 
+import java.io.Console;
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -56,6 +58,28 @@ public class Matrix {
 
     public LoginStorage getLoginStorage() {
         return mLoginStorage;
+    }
+
+    /**
+     * @return the application version
+     */
+    public String getVersion(boolean longformat) {
+        String versionName = "";
+        try {
+            PackageInfo pInfo = mAppContext.getPackageManager().getPackageInfo(mAppContext.getPackageName(), 0);
+            versionName = pInfo.versionName;
+        } catch (Exception e) {
+        }
+
+        String gitVersion = mAppContext.getResources().getString(R.string.git_revision);
+        if (longformat) {
+            String date = mAppContext.getResources().getString(R.string.git_revision_date);
+            versionName += " (" + gitVersion + "-" + date + ")";
+        } else {
+            versionName += " (" + gitVersion + ")";
+        }
+
+        return versionName;
     }
 
     /**
@@ -169,7 +193,7 @@ public class Matrix {
             Collection<MXSession> sessions = getMXSessions(activity);
 
             for(MXSession session : sessions) {
-                if (session.isActive()) {
+                if (session.isAlive()) {
                     session.setFailureCallback(new ErrorListener(session, activity));
                 }
             }
@@ -184,7 +208,7 @@ public class Matrix {
             Collection<MXSession> sessions = getMXSessions(activity);
 
             for(MXSession session : sessions) {
-                if (session.isActive()) {
+                if (session.isAlive()) {
                     session.setFailureCallback(null);
                 }
             }
@@ -322,7 +346,14 @@ public class Matrix {
             store = new MXMemoryStore(hsConfig.getCredentials());
         }
 
-        return new MXSession(hsConfig, new MXDataHandler(store, credentials), mAppContext);
+        return new MXSession(hsConfig, new MXDataHandler(store, credentials, new MXDataHandler.InvalidTokenListener() {
+            @Override
+            public void onTokenCorrupted() {
+                if (null != ConsoleApplication.getCurrentActivity()) {
+                    CommonActivityUtils.logout(ConsoleApplication.getCurrentActivity());
+                }
+            }
+        }), mAppContext);
     }
 
     /**

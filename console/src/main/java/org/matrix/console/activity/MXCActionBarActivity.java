@@ -61,7 +61,7 @@ public class MXCActionBarActivity extends ActionBarActivity {
 
         if (null != sessions) {
             for (MXSession session : sessions) {
-                if (session.isActive()) {
+                if (session.isAlive()) {
                     hasCorruptedStore |= session.getDataHandler().getStore().isCorrupted();
                 }
             }
@@ -188,8 +188,6 @@ public class MXCActionBarActivity extends ActionBarActivity {
             if (null != matrixInstance) {
                 matrixInstance.refreshPushRules();
             }
-
-            EventStreamService.cancelNotificationsForRoomId(null);
         }
 
         ConsoleApplication.setCurrentActivity(this);

@@ -53,7 +53,7 @@ public class SplashActivity extends MXCActionBarActivity {
         ArrayList<MXSession> sessions = Matrix.getMXSessions(this);
 
         for(MXSession session : sessions) {
-            if (session.isActive()) {
+            if (session.isAlive()) {
                 hasCorruptedStore |= session.getDataHandler().getStore().isCorrupted();
             }
         }
@@ -222,7 +222,7 @@ public class SplashActivity extends MXCActionBarActivity {
         Collection<MXSession> sessions = mDoneListeners.keySet();
 
         for(MXSession session : sessions) {
-            if (session.isActive()) {
+            if (session.isAlive()) {
                 session.getDataHandler().removeListener(mDoneListeners.get(session));
             }
         }

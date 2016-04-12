@@ -1,3 +1,19 @@
+Changes to Matrix Android Console in 0.5.4 (2016-04-14)
+=======================================================
+
+Improvements:
+ * Hide a push rule when it is not defined in the push rules set.
+
+Features:
+ * Add the auto logout the account credentials become invalid.
+
+Bugfixes:
+ * Fix the issue https://github.com/matrix-org/matrix-android-console/issues/15.
+ * Fix the user presence values.
+ * Some URL links were not properly managed.
+ * Fix the exif issues.
+
+
 Changes to Matrix Android Console in 0.5.3 (2016-02-16)
 =======================================================
 

@@ -213,7 +213,6 @@ public class NotificationSettingsActivity extends MXCActionBarActivity {
 
         for(String key : mRuleCheckBoxByRuleId.keySet()) {
             CheckBox checkBox = mRuleCheckBoxByRuleId.get(key);
-
             checkBox.setOnClickListener(mOnCheckBoxClickListener);
             mRuleIdByCheckBox.put(checkBox, key);
         }
@@ -286,7 +285,7 @@ public class NotificationSettingsActivity extends MXCActionBarActivity {
             // per room
             if (null != mBingRuleSet.content) {
                 mPerRoomAdapter.addAll(mBingRuleSet.getRoomRules());
-                mPerRoomAdapter.setRooms(mxSession.getDataHandler().getStore().getRooms(), mxSession.getMyUser().userId);
+                mPerRoomAdapter.setRooms(mxSession.getDataHandler().getStore().getRooms(), mxSession.getMyUserId());
             }
             // dummy bing rule to add a new one
             mPerRoomAdapter.addAll(new BingRule(false));
@@ -304,8 +303,12 @@ public class NotificationSettingsActivity extends MXCActionBarActivity {
                 BingRule rule = mBingRuleSet.findDefaultRule(ruleId);
                 CheckBox checkBox = mRuleCheckBoxByRuleId.get(ruleId);
 
+                if ((null == rule) && (null != checkBox)) {
+                    View parentView = (View)checkBox.getParent();
+                    parentView.setVisibility(View.GONE);
+                }
                 // sanity check
-                if ((null != rule) && (null != checkBox)) {
+                else if (null != checkBox) {
                     checkBox.setChecked((null == rule) || (rule.isEnabled));
                 }
             }

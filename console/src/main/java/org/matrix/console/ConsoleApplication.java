@@ -75,12 +75,13 @@ public class ConsoleApplication extends Application {
         try {
             PackageInfo pinfo = getPackageManager().getPackageInfo(getPackageName(), 0);
             VERSION_BUILD = pinfo.versionCode;
-            VERSION_STRING = pinfo.versionName;
         }
         catch (PackageManager.NameNotFoundException e) {}
 
         LogUtilities.setLogDirectory(new File(getCacheDir().getAbsolutePath() + "/logs"));
         LogUtilities.storeLogcat();
+
+        VERSION_STRING = Matrix.getInstance(this).getVersion(false);
 
         initGoogleAnalytics();
 

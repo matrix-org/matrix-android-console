@@ -195,7 +195,7 @@ public class HomeActivity extends MXCActionBarActivity {
         final MXSession session = sessions.get(index);
 
         // check if the session is still active
-        if (session.isActive()) {
+        if (session.isAlive()) {
             final String homeServerUrl = session.getHomeserverConfig().getHomeserverUri().toString();
 
             // the home server has already been checked ?
@@ -676,6 +676,12 @@ public class HomeActivity extends MXCActionBarActivity {
                     @Override
                     public void run() {
                         Log.d(LOG_TAG, "onLiveEventsChunkProcessed");
+
+                        // clear the notification if they are not anymore valid
+                        // i.e the event has been read from another client
+                        // or deleted
+                        EventStreamService.checkDisplayedNotification();
+
                         if (!mIsPaused && refreshOnChunkEnd) {
                             mAdapter.sortSummaries();
                             mAdapter.notifyDataSetChanged();
@@ -729,6 +735,30 @@ public class HomeActivity extends MXCActionBarActivity {
                     }
                 }
             }
+
+            @Override
+            public void onRoomSyncWithLimitedTimeline(String roomId) {
+                if (mInitialSyncComplete) {
+                    List<MXSession> sessions = new ArrayList<MXSession>(Matrix.getMXSessions(HomeActivity.this));
+                    final int section = sessions.indexOf(session);
+
+                    RoomSummary summary = mAdapter.getSummaryByRoomId(section, roomId);
+                    if (null != summary) {
+                        mAdapter.removeRoomSummary(section, summary);
+                    }
+
+                    summary = session.getDataHandler().getStore().getSummary(roomId);
+
+                    // sanity checks
+                    if (null != summary) {
+                        addSummary(summary);
+                        mAdapter.sortSummaries();
+                    }
+
+                    refreshOnChunkEnd = true;
+                }
+            }
+
 
             @Override
             public void onJoinRoom(String roomId) {
@@ -1067,7 +1097,6 @@ public class HomeActivity extends MXCActionBarActivity {
                     }
                 });
             }
-
         }
         return super.onOptionsItemSelected(item);
     }
@@ -1369,16 +1398,11 @@ public class HomeActivity extends MXCActionBarActivity {
 
         String message = "<div class=\"banner\"> <div class=\"l-page no-clear align-center\"> <h2 class=\"s-heading\">"+ getString(R.string.settings_title_config) + "</h2> </div> </div>";
 
-        String versionName = "";
-        try {
-            PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
-            versionName = pInfo.versionName;
-        } catch (Exception e) {
-
-        }
+        String versionName = Matrix.getInstance(this).getVersion(false);
+        String SDKVersion =  Matrix.getInstance(this).getDefaultSession().getVersion(false);
 
         message += "<strong>matrixConsole version</strong> <br>" + versionName;
-        message += "<p><strong>SDK version</strong> <br>" + versionName;
+        message += "<p><strong>SDK version</strong> <br>" + SDKVersion;
         message += "<div class=\"banner\"> <div class=\"l-page no-clear align-center\"> <h2 class=\"s-heading\">Third Party Library Licenses</h2> </div> </div>";
         message += "<a href=\"" + uri.toString() + "\">Licenses</a>";
 

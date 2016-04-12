@@ -588,13 +588,13 @@ public class RoomActivity extends MXCActionBarActivity {
                                                             }
 
                                                             resizeBitmapStream.close();
-
-                                                            // try to apply exif rotation
-                                                            if (0 != rotationAngle) {
-                                                                // rotate the image content
-                                                                ImageUtils.rotateImage(RoomActivity.this, mPendingMediaUrl, rotationAngle, mMediasCache);
-                                                            }
                                                         }
+                                                    }
+
+                                                    // try to apply exif rotation
+                                                    if (0 != rotationAngle) {
+                                                        // rotate the image content
+                                                        ImageUtils.rotateImage(RoomActivity.this, mPendingMediaUrl, rotationAngle, mMediasCache);
                                                     }
                                                 } catch (Exception e) {
                                                     Log.e(LOG_TAG, "Onclick " + e.getMessage());
@@ -852,7 +852,7 @@ public class RoomActivity extends MXCActionBarActivity {
 
         ViewedRoomTracker.getInstance().setViewedRoomId(mRoom.getRoomId());
         ViewedRoomTracker.getInstance().setMatrixId(mSession.getCredentials().userId);
-        EventStreamService.cancelNotificationsForRoomId(mRoom.getRoomId());
+        EventStreamService.cancelNotificationsForRoomId(mSession.getCredentials().userId, mRoom.getRoomId());
 
         // reset the unread messages counter
         mRoom.sendReadReceipt();
