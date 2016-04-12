@@ -108,7 +108,7 @@ public class SettingsActivity extends MXCActionBarActivity {
         size += mMediasCache.cacheSize();
 
         for(MXSession session : Matrix.getMXSessions(SettingsActivity.this)) {
-            if (session.isActive()) {
+            if (session.isAlive()) {
                 size += session.getDataHandler().getStore().diskUsage();
             }
         }
@@ -445,7 +445,7 @@ public class SettingsActivity extends MXCActionBarActivity {
                         displayNameEditText.setText(myUser.displayname);
                     }
 
-                    if (fSession.isActive()) {
+                    if (fSession.isAlive()) {
                         fSession.getProfileApiClient().avatarUrl(myUser.user_id, new SimpleApiCallback<String>(this) {
                             @Override
                             public void onSuccess(String avatarUrl) {

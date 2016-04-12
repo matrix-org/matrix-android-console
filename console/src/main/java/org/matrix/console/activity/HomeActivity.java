@@ -195,7 +195,7 @@ public class HomeActivity extends MXCActionBarActivity {
         final MXSession session = sessions.get(index);
 
         // check if the session is still active
-        if (session.isActive()) {
+        if (session.isAlive()) {
             final String homeServerUrl = session.getHomeserverConfig().getHomeserverUri().toString();
 
             // the home server has already been checked ?
@@ -1097,7 +1097,6 @@ public class HomeActivity extends MXCActionBarActivity {
                     }
                 });
             }
-
         }
         return super.onOptionsItemSelected(item);
     }

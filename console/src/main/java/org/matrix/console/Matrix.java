@@ -193,7 +193,7 @@ public class Matrix {
             Collection<MXSession> sessions = getMXSessions(activity);
 
             for(MXSession session : sessions) {
-                if (session.isActive()) {
+                if (session.isAlive()) {
                     session.setFailureCallback(new ErrorListener(session, activity));
                 }
             }
@@ -208,7 +208,7 @@ public class Matrix {
             Collection<MXSession> sessions = getMXSessions(activity);
 
             for(MXSession session : sessions) {
-                if (session.isActive()) {
+                if (session.isAlive()) {
                     session.setFailureCallback(null);
                 }
             }

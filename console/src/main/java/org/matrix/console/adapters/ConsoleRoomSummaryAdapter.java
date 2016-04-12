@@ -70,7 +70,7 @@ public class ConsoleRoomSummaryAdapter extends RoomSummaryAdapter {
         MXSession session = Matrix.getMXSession(mContext, roomSummary.getMatrixId());
 
         // check if the session is active
-        if ((null == session) || (!session.isActive())) {
+        if ((null == session) || (!session.isAlive())) {
             return null;
         }
 
@@ -81,7 +81,7 @@ public class ConsoleRoomSummaryAdapter extends RoomSummaryAdapter {
         MXSession session = Matrix.getMXSession(mContext, matrixId);
 
         // check if the session is active
-        if ((null == session) || (!session.isActive())) {
+        if ((null == session) || (!session.isAlive())) {
             return null;
         }
 
@@ -104,7 +104,7 @@ public class ConsoleRoomSummaryAdapter extends RoomSummaryAdapter {
         if (mSessions.size() == 1) {
             return mContext.getResources().getString(R.string.my_rooms);
         } else {
-            if (mSessions.get(section).isActive()) {
+            if (mSessions.get(section).isAlive()) {
                 return mSessions.get(section).getMyUserId();
             } else {
                 return mContext.getResources().getString(R.string.my_rooms);
