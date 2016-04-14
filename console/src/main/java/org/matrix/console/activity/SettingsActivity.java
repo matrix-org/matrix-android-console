@@ -65,6 +65,7 @@ import java.io.InputStream;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 public class SettingsActivity extends MXCActionBarActivity {
 
@@ -177,10 +178,15 @@ public class SettingsActivity extends MXCActionBarActivity {
             avatarView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    mUpdatingSessionId = fSession.getCredentials().userId;
-                    Intent fileIntent = new Intent(Intent.ACTION_PICK);
-                    fileIntent.setType("image/*");
-                    startActivityForResult(fileIntent, REQUEST_IMAGE);
+                    try {
+                        mUpdatingSessionId = fSession.getCredentials().userId;
+
+                        Intent fileIntent = new Intent(Intent.ACTION_PICK);
+                        fileIntent.setType("image/*");
+                        startActivityForResult(fileIntent, REQUEST_IMAGE);
+                    } catch (Exception e) {
+                        Toast.makeText(SettingsActivity.this, e.getLocalizedMessage(), Toast.LENGTH_LONG).show();
+                    }
                 }
             });
 
