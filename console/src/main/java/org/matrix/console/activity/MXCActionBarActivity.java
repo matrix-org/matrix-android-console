@@ -28,6 +28,7 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarActivity;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -67,6 +68,17 @@ public class MXCActionBarActivity extends ActionBarActivity {
             }
         }
         return hasCorruptedStore;
+    }
+
+    @Override
+    public void onLowMemory() {
+        super.onLowMemory();
+
+        Log.e("MXCActionBarActivity", "onLowMemory ");
+
+        // clear the application cache
+        // to reduce memory usage.
+        Matrix.getInstance(this).reloadSessions(this);
     }
 
     @Override
