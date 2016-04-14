@@ -255,6 +255,16 @@ public class Matrix {
 
             if (!res) {
                 Log.e(LOG_TAG, "hasValidSessions : has no session");
+            } else {
+                for(MXSession session : instance.mMXSessions) {
+                    // some GA issues reported that the data handler can be null
+                    // so assume the application should be restarted
+                    res &= (null != session.getDataHandler());
+                }
+
+                if (!res) {
+                    Log.e(LOG_TAG, "hasValidSessions : one sesssion has no valid data hanlder");
+                }
             }
         }
 
